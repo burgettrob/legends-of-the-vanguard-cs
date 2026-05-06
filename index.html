@@ -1215,11 +1215,20 @@ select option { background: var(--bg3); }
     <div class="card-body table-scroll">
       <table class="inv-table" id="equip-table">
         <thead><tr>
-          <th>Slot</th><th>Name</th><th>Scaling Stat</th><th>Wt</th><th>Dmg</th><th>Rng</th>
+          <th rowspan="2" style="vertical-align:middle;">Slot</th>
+          <th rowspan="2" style="vertical-align:middle;">Name</th>
+          <th rowspan="2" style="vertical-align:middle;">Scaling Stat</th>
+          <th colspan="13" style="text-align:center;background:rgba(255,255,255,.04);color:var(--text3);font-size:10px;letter-spacing:.07em;">COMBAT</th>
+          <th colspan="7" style="text-align:center;background:rgba(90,127,255,.18);color:var(--accent);font-size:10px;letter-spacing:.07em;border-left:2px solid var(--accent);">MAIN STATS</th>
+          <th colspan="20" style="text-align:center;background:rgba(168,100,224,.18);color:var(--purple);font-size:10px;letter-spacing:.07em;border-left:2px solid var(--purple);">RESISTANCES</th>
+          <th colspan="22" style="text-align:center;background:rgba(61,204,199,.18);color:var(--teal);font-size:10px;letter-spacing:.07em;border-left:2px solid var(--teal);">SKILLS</th>
+        </tr><tr>
+          <th>Wt</th><th>Dmg</th><th>Rng</th>
           <th>Def</th><th>Armor</th><th>MArmor</th><th>SR</th><th>CR</th>
-          <th>Spd</th><th>Crit</th><th>Init</th><th>Stealth</th>
-          <th>BRW</th><th>AGI</th><th>PHY</th><th>INT</th><th>WILL</th><th>CHAR</th><th>LUCK</th><th>HP</th>
-          <th>Water</th><th>Ice</th><th>Fire</th><th>Magma</th><th>Lightning</th><th>Air</th><th>Poison</th><th>Venom</th><th>Nature</th><th>Earth</th><th>Necrotic</th><th>Arcane</th><th>Kinetic</th><th>Psychic</th><th>Holy</th><th>Radiant</th><th>Shadow</th><th>Void</th><th>Blood</th><th>Chaos</th>
+          <th>Spd</th><th>Crit</th><th>Init</th><th>Stealth</th><th>HP</th>
+          <th style="border-left:2px solid var(--accent);">BRW</th><th>AGI</th><th>PHY</th><th>INT</th><th>WILL</th><th>CHAR</th><th>LUCK</th>
+          <th style="font-size:10px;white-space:nowrap;border-left:2px solid var(--purple);">Water</th><th style="font-size:10px;white-space:nowrap;">Ice</th><th style="font-size:10px;white-space:nowrap;">Fire</th><th style="font-size:10px;white-space:nowrap;">Magma</th><th style="font-size:10px;white-space:nowrap;">Lightning</th><th style="font-size:10px;white-space:nowrap;">Air</th><th style="font-size:10px;white-space:nowrap;">Poison</th><th style="font-size:10px;white-space:nowrap;">Venom</th><th style="font-size:10px;white-space:nowrap;">Nature</th><th style="font-size:10px;white-space:nowrap;">Earth</th><th style="font-size:10px;white-space:nowrap;">Necrotic</th><th style="font-size:10px;white-space:nowrap;">Arcane</th><th style="font-size:10px;white-space:nowrap;">Kinetic</th><th style="font-size:10px;white-space:nowrap;">Psychic</th><th style="font-size:10px;white-space:nowrap;">Holy</th><th style="font-size:10px;white-space:nowrap;">Radiant</th><th style="font-size:10px;white-space:nowrap;">Shadow</th><th style="font-size:10px;white-space:nowrap;">Void</th><th style="font-size:10px;white-space:nowrap;">Blood</th><th style="font-size:10px;white-space:nowrap;">Chaos</th>
+          <th style="font-size:10px;border-left:2px solid var(--teal);">Animal Handling</th><th style="font-size:10px;">Athletics</th><th style="font-size:10px;">Intimidation</th><th style="font-size:10px;">Acrobatics</th><th style="font-size:10px;">Stealth</th><th style="font-size:10px;">Thievery</th><th style="font-size:10px;">First Aid</th><th style="font-size:10px;">Fortitude</th><th style="font-size:10px;">Arcana</th><th style="font-size:10px;">History</th><th style="font-size:10px;">Investigation</th><th style="font-size:10px;">Religion</th><th style="font-size:10px;">Nature</th><th style="font-size:10px;">Insight</th><th style="font-size:10px;">Survival</th><th style="font-size:10px;">Perception</th><th style="font-size:10px;">Diplomacy</th><th style="font-size:10px;">Deception</th><th style="font-size:10px;">Performance</th><th style="font-size:10px;">Persuasion</th><th style="font-size:10px;">Scavenging</th><th style="font-size:10px;">Bartering</th>
         </tr></thead>
         <tbody id="equip-body"></tbody>
       </table>
@@ -2320,6 +2329,7 @@ let state = {
   bloodChargesCurrent: 0,
   bloodChargesMax: 2,
   comboDiceCurrent: 0,
+  ordersChargesCurrent: 0,
   furyChargesCurrent: 0,
   skeletonChargesCurrent: 0,
   soulFragmentsCurrent: 0,
@@ -2443,10 +2453,13 @@ function calcSkillBonus(skillName, attr) {
   const subraceBonus = (SUBRACE_SKILL_BONUS[subrace] && SUBRACE_SKILL_BONUS[subrace][skillName]) ? SUBRACE_SKILL_BONUS[subrace][skillName] : 0;
   const race = document.getElementById('sel-race').value;
   const raceBonus = (RACE_SKILL_BONUS[race] && RACE_SKILL_BONUS[race][skillName]) ? RACE_SKILL_BONUS[race][skillName] : 0;
+  // Gear skill bonus from equipped gear skill columns
+  const gearSkillKey = 'skill_' + skillName.replace(/ /g, '_');
+  const gearSkillBonus = (state.gearStats && state.gearStats[gearSkillKey]) ? state.gearStats[gearSkillKey] : 0;
   const stealthGearBonus = skillName === 'Stealth' ? ((state.gearStats && state.gearStats.stealth ? state.gearStats.stealth : 0) + (state.buffStatTotals && state.buffStatTotals['stealth'] ? state.buffStatTotals['stealth'] : 0)) : 0;
   // Ability mod can push skill negative but cannot push it positive on its own
   // All other bonuses (pm, bg, spec, subrace, race, gear) can make it positive
-  const otherBonuses = pm + bgBonus + specBonus + subraceBonus + raceBonus + stealthGearBonus;
+  const otherBonuses = pm + bgBonus + specBonus + subraceBonus + raceBonus + stealthGearBonus + gearSkillBonus;
   const modContribution = baseMod === 'Death' ? 0 : baseMod;
   // If ability mod is negative, it applies fully
   // If ability mod is positive, it is capped at 0 (can't push skill above what bonuses give)
@@ -3574,9 +3587,7 @@ function getProfAbilityBonus(profName) {
 
 function calcProfRoll(level, profName) {
   const abilBonus = profName ? getProfAbilityBonus(profName) : 0;
-  const luckMod   = getModifier('LUCK');
-  const luckNum   = typeof luckMod === 'number' ? luckMod : 0;
-  const total     = (abilBonus * level) + (luckNum * 5);
+  const total     = abilBonus * level;
   return (total >= 0 ? '+' : '') + total;
 }
 
@@ -3789,14 +3800,14 @@ const EQUIP_COLS = [
   'crit',     // 11
   'init',     // 12
   'stealth',  // 13
-  'BRW',      // 14
-  'AGI',      // 15
-  'PHY',      // 16
-  'INT',      // 17
-  'WILL',     // 18
-  'CHAR',     // 19
-  'LUCK',     // 20
-  null,       // 21: hp — not calculated
+  null,       // 14: hp — not calculated
+  'BRW',      // 15
+  'AGI',      // 16
+  'PHY',      // 17
+  'INT',      // 18
+  'WILL',     // 19
+  'CHAR',     // 20
+  'LUCK',     // 21
   // Individual resistance columns 22+
   'resist_Water',  // 22
   'resist_Ice',  // 23
@@ -3818,6 +3829,29 @@ const EQUIP_COLS = [
   'resist_Void',  // 39
   'resist_Blood',  // 40
   'resist_Chaos',  // 41
+  // Skill bonus columns 42+
+  'skill_Animal_Handling',  // 42
+  'skill_Athletics',  // 43
+  'skill_Intimidation',  // 44
+  'skill_Acrobatics',  // 45
+  'skill_Stealth',  // 46
+  'skill_Thievery',  // 47
+  'skill_First_Aid',  // 48
+  'skill_Fortitude',  // 49
+  'skill_Arcana',  // 50
+  'skill_History',  // 51
+  'skill_Investigation',  // 52
+  'skill_Religion',  // 53
+  'skill_Nature',  // 54
+  'skill_Insight',  // 55
+  'skill_Survival',  // 56
+  'skill_Perception',  // 57
+  'skill_Diplomacy',  // 58
+  'skill_Deception',  // 59
+  'skill_Performance',  // 60
+  'skill_Persuasion',  // 61
+  'skill_Scavenging',  // 62
+  'skill_Bartering',  // 63
 ];
 
 function buildEquipTable() {
@@ -3850,8 +3884,8 @@ function buildEquipTable() {
     } else {
       cells += `<td></td>`;
     }
-    // cols 2-41 (21 standard + 20 resistances)
-    for (let i = 2; i <= 41; i++) {
+    // cols 2-63 (21 standard + 20 resistances + 22 skills)
+    for (let i = 2; i <= 63; i++) {
       const statKey = EQUIP_COLS[i];
       const hp      = i === 21;
       const isDmg   = i === 3;   // text input, accepts dice notation
@@ -3954,6 +3988,8 @@ function recalcInventory() {
     ohWeaponName:'', ohWeaponDmg:'', ohWeaponRng:0,
     // Individual resistance gear bonuses
     resist_Water:0, resist_Ice:0, resist_Fire:0, resist_Magma:0, resist_Lightning:0, resist_Air:0, resist_Poison:0, resist_Venom:0, resist_Nature:0, resist_Earth:0, resist_Necrotic:0, resist_Arcane:0, resist_Kinetic:0, resist_Psychic:0, resist_Holy:0, resist_Radiant:0, resist_Shadow:0, resist_Void:0, resist_Blood:0, resist_Chaos:0,
+    // Skill gear bonuses
+    skill_Animal_Handling:0, skill_Athletics:0, skill_Intimidation:0, skill_Acrobatics:0, skill_Stealth:0, skill_Thievery:0, skill_First_Aid:0, skill_Fortitude:0, skill_Arcana:0, skill_History:0, skill_Investigation:0, skill_Religion:0, skill_Nature:0, skill_Insight:0, skill_Survival:0, skill_Perception:0, skill_Diplomacy:0, skill_Deception:0, skill_Performance:0, skill_Persuasion:0, skill_Scavenging:0, skill_Bartering:0,
   };
 
   const rows = document.querySelectorAll('#equip-body tr');
@@ -4316,6 +4352,7 @@ function updateSecondaryResource(cls, spec, level) {
   if (cls === 'Pugilist')                         type = 'chi';
   else if (cls === 'Rogue' && level >= 2)         type = 'combo';
   else if (cls === 'Warlord')                     type = 'fury';
+  else if (cls === 'Warrior' && level >= 3 && (spec === 'Gladiator' || spec === 'Commander' || spec === 'Knight')) type = 'orders';
   else if (spec === 'Chronomancer')               type = 'strands';
   else if (spec === 'Path of the Crusader')       type = 'blood';
 
@@ -4380,6 +4417,30 @@ function updateSecondaryResource(cls, spec, level) {
     dieLabel.style.cssText = 'font-size:11px;color:var(--orange);font-family:var(--font-mono);margin-top:3px;text-align:center;width:100%;';
     dieLabel.textContent = `${state.comboDiceCurrent}/${maxDice} ${dieType}`;
     pipsEl.appendChild(dieLabel);
+
+  } else if (type === 'orders') {
+    // Issue Orders — Gladiator: 1 at level 3; Commander/Knight: 2 at level 3
+    const maxOrders = spec === 'Gladiator' ? 1 : 2;
+    if (state.ordersChargesCurrent > maxOrders) state.ordersChargesCurrent = maxOrders;
+    label.textContent = 'Issue Orders';
+    if (strandBtns) strandBtns.style.display = 'none';
+    pipsEl.innerHTML = '';
+    for (let i = 0; i < maxOrders; i++) {
+      const pip = document.createElement('div');
+      const used = i < state.ordersChargesCurrent;
+      pip.className = 'sec-pip warlord-fury-pip' + (used ? ' used' : '');
+      pip.style.borderColor = used ? '#a0c0e0' : '';
+      pip.style.background  = used ? 'rgba(160,192,224,.2)' : '';
+      pip.style.color       = used ? '#a0c0e0' : 'var(--text3)';
+      pip.textContent = '📋';
+      pip.title = `Issue Orders charge — ${used ? 'Used' : 'Available'} (click to toggle)`;
+      const idx = i;
+      pip.addEventListener('click', () => {
+        state.ordersChargesCurrent = (state.ordersChargesCurrent === idx + 1) ? idx : idx + 1;
+        updateSecondaryResource(cls, spec, level);
+      });
+      pipsEl.appendChild(pip);
+    }
 
   } else if (type === 'fury') {
     // Warlord Fury: 2 at level 2, +1 at level 4, +1 at level 7
