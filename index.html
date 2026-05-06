@@ -428,6 +428,8 @@ select option { background: var(--bg3); }
 .sec-pip.fury-pip.used { background: #f09050; color: var(--bg); }
 .sec-pip.warlord-fury-pip      { border-color: #e05555; color: #e05555; border-radius: 4px; font-size: 18px; width: 28px; height: 28px; border-width: 2px; }
 .sec-pip.warlord-fury-pip.used { background: rgba(224,85,85,.2); color: #ff8060; box-shadow: 0 0 8px rgba(224,85,85,.5); }
+.sec-pip.druid-ap-pip      { border-color: #7ec86e; color: #7ec86e; border-radius: 50%; font-size: 16px; width: 28px; height: 28px; border-width: 2px; }
+.sec-pip.druid-ap-pip.used { background: rgba(126,200,110,.2); color: #a0e090; box-shadow: 0 0 8px rgba(126,200,110,.4); }
 
 /* ── CURRENCY ── */
 .coin-grid { display: grid; grid-template-columns: repeat(4,1fr); gap: 10px; }
@@ -797,7 +799,7 @@ select option { background: var(--bg3); }
   <button class="tab" onclick="showTab('inventory')">Inventory</button>
   <button class="tab" onclick="showTab('spells')">Spells & Abilities</button>
   <button class="tab" onclick="showTab('buffs')">Buffs / Debuffs</button>
-  <button class="tab" onclick="showTab('shapeshifting')">Shapeshifting</button>
+  <button class="tab" id="tab-btn-shapeshifting" onclick="showTab('shapeshifting')">Shapeshifting</button>
   <button class="tab" onclick="showTab('companions')">Companions</button>
   <button class="tab" onclick="showTab('ailments')">Ailments</button>
   <button class="tab" onclick="showTab('scaling')">Spell Scaling</button>
@@ -825,6 +827,13 @@ select option { background: var(--bg3); }
       <div class="char-subtitle" id="banner-sub">Select Class · Race · Background</div>
     </div>
     <div style="display:flex;gap:8px;align-items:center;">
+      <button onclick="openRestModal()"
+        style="background:transparent;border:1px solid var(--teal);border-radius:6px;
+               color:var(--teal);font-family:var(--font-head);font-size:11px;letter-spacing:.06em;
+               text-transform:uppercase;padding:6px 12px;cursor:pointer;transition:all .15s;white-space:nowrap;"
+        onmouseenter="this.style.background='var(--teal)';this.style.color='var(--bg)'"
+        onmouseleave="this.style.background='transparent';this.style.color='var(--teal)'"
+        title="Take a Short, Long, or Full Rest">⛺ Rest</button>
       <div class="vital-box lvl" style="min-width:60px;">
         <div class="v-label">Level</div>
         <div class="v-value" id="disp-level">1</div>
@@ -908,6 +917,32 @@ select option { background: var(--bg3); }
       <div class="card">
         <div class="card-header"><div class="dot" style="background:var(--gold)"></div>Character Identity</div>
         <div class="card-body">
+          <div style="display:flex;gap:16px;align-items:flex-start;">
+            <!-- CHARACTER PORTRAIT -->
+            <div style="flex-shrink:0;text-align:center;">
+              <div id="portrait-wrap" style="width:110px;height:140px;border:2px solid var(--border);
+                   border-radius:8px;background:var(--bg3);cursor:pointer;overflow:hidden;
+                   display:flex;align-items:center;justify-content:center;position:relative;
+                   transition:border-color .2s;" onclick="document.getElementById('portrait-input').click()"
+                   title="Click to upload character portrait"
+                   onmouseenter="this.style.borderColor='var(--gold)'"
+                   onmouseleave="this.style.borderColor='var(--border)'">
+                <img id="portrait-img" src="" alt="" style="width:100%;height:100%;object-fit:cover;display:none;">
+                <div id="portrait-placeholder" style="display:flex;flex-direction:column;align-items:center;gap:6px;padding:12px;">
+                  <span style="font-size:32px;opacity:.4;">🧙</span>
+                  <span style="font-size:9px;color:var(--text3);font-family:var(--font-mono);letter-spacing:.05em;text-align:center;">CLICK TO<br>UPLOAD</span>
+                </div>
+                <div id="portrait-remove" onclick="event.stopPropagation();removePortrait()"
+                     style="display:none;position:absolute;top:4px;right:4px;background:rgba(0,0,0,.6);
+                            color:white;border-radius:50%;width:18px;height:18px;font-size:12px;
+                            cursor:pointer;line-height:18px;text-align:center;">✕</div>
+              </div>
+              <input type="file" id="portrait-input" accept="image/*" style="display:none;"
+                onchange="loadPortrait(event)">
+              <div style="font-size:9px;color:var(--text3);font-family:var(--font-mono);margin-top:5px;letter-spacing:.04em;">PORTRAIT</div>
+            </div>
+            <!-- IDENTITY FIELDS -->
+            <div style="flex:1;min-width:0;">
           <div class="identity-grid">
             <div class="field"><label>Class</label>
               <select id="sel-class" onchange="recalc()">
@@ -968,8 +1003,10 @@ select option { background: var(--bg3); }
               </div>
             </div>
 
-          </div>
-        </div>
+          </div><!-- /identity-grid -->
+            </div><!-- /identity fields -->
+          </div><!-- /portrait+fields flex -->
+        </div><!-- /card-body -->
       </div>
 
       <!-- MULTICLASS -->
@@ -1302,13 +1339,34 @@ select option { background: var(--bg3); }
 <!-- ═══════════════════════════════════════════ SHAPESHIFTING TAB ══════════════════════════════ -->
 <div id="tab-shapeshifting" class="panel">
 
-  <div id="shapeshift-unavailable" style="color:var(--text3);font-size:13px;text-align:center;padding:40px 0;display:none;">
-    Shapeshifting is only available for the Druid class.
+  <div id="shapeshift-unavailable" style="color:var(--text3);font-size:13px;text-align:center;padding:40px 0;">
+    Shapeshifting is only available for Druids at level 2+.
   </div>
 
-  <div id="shapeshift-content">
+  <div id="shapeshift-content" style="display:none;">
 
-    <!-- Shapeshift Charges + Active Form -->
+    <!-- Warden: Pick Mastery -->
+    <div class="card" id="ss-mastery-picker" style="margin-bottom:12px;display:none;">
+      <div class="card-header"><div class="dot" style="background:var(--green)"></div>Choose Your Combat Mastery</div>
+      <div class="card-body">
+        <div style="display:flex;flex-direction:column;gap:10px;" id="ss-mastery-options">
+          <!-- built by JS -->
+        </div>
+      </div>
+    </div>
+
+    <!-- Mender: Pick Utility Form -->
+    <div class="card" id="ss-utility-picker" style="margin-bottom:12px;display:none;">
+      <div class="card-header"><div class="dot" style="background:var(--teal)"></div>Choose Your Utility Form</div>
+      <div class="card-body">
+        <p style="font-size:13px;color:var(--text2);margin-bottom:12px;">Menders gain 1 Utility Form which can be tiny, small, or medium. The form may fly or swim.</p>
+        <div style="display:flex;flex-direction:column;gap:8px;" id="ss-utility-options">
+          <!-- built by JS -->
+        </div>
+      </div>
+    </div>
+
+    <!-- Shapeshift Status -->
     <div class="card" style="margin-bottom:12px;">
       <div class="card-header"><div class="dot" style="background:var(--green)"></div>Shapeshift Status</div>
       <div class="card-body">
@@ -1327,28 +1385,7 @@ select option { background: var(--bg3); }
               style="background:var(--bg3);border:1px solid var(--border);border-radius:4px;color:var(--green);
                      font-size:13px;padding:5px 10px;font-weight:600;cursor:pointer;width:100%;max-width:260px;">
               <option value="">— Not Shapeshifted —</option>
-              <optgroup label="── Combat Forms ──">
-                <option value="Ursine Form">Ursine Form (Bear)</option>
-                <option value="Ape Form">Ape Form</option>
-                <option value="Feline Form">Feline Form (Panther)</option>
-                <option value="Lupine Form">Lupine Form (Wolf)</option>
-                <option value="Arachnid Form">Arachnid Form (Spider/Scorpion)</option>
-                <option value="Amphibian Form">Amphibian Form (Frog/Toad)</option>
-                <option value="Porcine Form">Porcine Form (Boar)</option>
-                <option value="Weasel Form">Weasel Form</option>
-                <option value="Reptilian Form">Reptilian Form (Snake)</option>
-                <option value="Insectoid Form">Insectoid Form (Beetle/Ant)</option>
-                <option value="Piscine Form">Piscine Form (Shark/Octopus)</option>
-                <option value="Avian Form">Avian Form (Aerial)</option>
-                <option value="Ancient Form">Ancient Form (Treant)</option>
-              </optgroup>
-              <optgroup label="── Utility Forms ──">
-                <option value="Leaf Form">Leaf Form</option>
-                <option value="Feline Form (Utility)">Feline Form (Utility)</option>
-                <option value="Equine Form">Equine Form</option>
-                <option value="Flight Form">Flight Form</option>
-                <option value="Aquatic Form">Aquatic Form</option>
-              </optgroup>
+              <!-- options populated by JS based on spec/mastery -->
             </select>
           </div>
           <div id="ss-active-info" style="flex:2;min-width:220px;display:none;">
@@ -1363,44 +1400,19 @@ select option { background: var(--bg3); }
         <div id="ss-ancient-rooted" style="display:none;margin-top:10px;">
           <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:13px;color:var(--text2);">
             <input type="checkbox" id="ss-rooted-cb" style="width:16px;height:16px;accent-color:var(--green);">
-            Rooted (Ancient Form): Rock Throw +45 ft range / +50% dmg / −2 Defense / −5 AGI saves / cast Entangling Vines for 1 AP
+            Rooted (Treant Form): Rock Throw +45 ft range / +50% dmg / −2 Defense / −5 AGI saves / cast Entangling Vines for 1 AP
           </label>
         </div>
       </div>
     </div>
 
-    <!-- Combat Forms reference -->
-    <div class="card" style="margin-bottom:12px;">
-      <div class="card-header"><div class="dot" style="background:var(--orange)"></div>Combat Forms Reference</div>
-      <div class="card-body" style="padding:0;">
-        <table style="width:100%;border-collapse:collapse;font-size:12px;">
-          <thead>
-            <tr style="background:var(--bg3);color:var(--text3);font-family:var(--font-mono);font-size:10px;letter-spacing:.06em;">
-              <th style="padding:8px 12px;text-align:left;border-bottom:1px solid var(--border);white-space:nowrap;">FORM</th>
-              <th style="padding:8px 12px;text-align:center;border-bottom:1px solid var(--border);">ATK</th>
-              <th style="padding:8px 12px;text-align:left;border-bottom:1px solid var(--border);">STAT BONUSES</th>
-              <th style="padding:8px 12px;text-align:left;border-bottom:1px solid var(--border);">DESCRIPTION</th>
-            </tr>
-          </thead>
-          <tbody id="ss-combat-forms-tbody"></tbody>
-        </table>
+    <!-- Active Form Details (mastery/form info card) -->
+    <div class="card" id="ss-form-detail-card" style="display:none;">
+      <div class="card-header"><div class="dot" id="ss-form-detail-dot" style="background:var(--green)"></div>
+        <span id="ss-form-detail-title">Form Details</span>
       </div>
-    </div>
-
-    <!-- Utility Forms reference -->
-    <div class="card">
-      <div class="card-header"><div class="dot" style="background:var(--teal)"></div>Utility Forms Reference</div>
-      <div class="card-body" style="padding:0;">
-        <table style="width:100%;border-collapse:collapse;font-size:12px;">
-          <thead>
-            <tr style="background:var(--bg3);color:var(--text3);font-family:var(--font-mono);font-size:10px;letter-spacing:.06em;">
-              <th style="padding:8px 12px;text-align:left;border-bottom:1px solid var(--border);white-space:nowrap;">FORM</th>
-              <th style="padding:8px 12px;text-align:left;border-bottom:1px solid var(--border);">BONUSES</th>
-              <th style="padding:8px 12px;text-align:left;border-bottom:1px solid var(--border);">DESCRIPTION</th>
-            </tr>
-          </thead>
-          <tbody id="ss-utility-forms-tbody"></tbody>
-        </table>
+      <div class="card-body">
+        <div id="ss-form-detail-body" style="font-size:13px;color:var(--text2);line-height:1.7;"></div>
       </div>
     </div>
 
@@ -1598,7 +1610,31 @@ select option { background: var(--bg3); }
 
 </div><!-- /app -->
 
-<script>
+<script>const COMBAT_FORMS = [
+  { name:'Ursine Form',    atk:'BRW', bonuses:'+1 BRW / +1 Armor',                           desc:'Transforms into a bear of varying size. Tank/tough combat form. Soaks up damage while being no slouch at dealing it.' },
+  { name:'Ape Form',       atk:'BRW', bonuses:'+1 BRW / Climbing 30 ft',                     desc:'Transforms into an ape. All-around form — absorbs and deals damage while being versatile, if not the best at any one task.' },
+  { name:'Feline Form',    atk:'AGI', bonuses:'+1 AGI / +2 Stealth',                         desc:'Takes on a feline form — very agile, powerful, and stealthy. The DPS (high damage) form.' },
+  { name:'Lupine Form',    atk:'AGI', bonuses:'+1 AGI / Pack Tactics',                       desc:'Takes on the form of a wolf. Strong fighter with Pack Tactics. Offensive form that can also buff allies with howls.' },
+  { name:'Arachnid Form',  atk:'AGI', bonuses:'+1 AGI / Climbing 30 ft',                     desc:'Fast, capable of climbing walls and unleashing webbing. Scorpion also falls under this form. Incredible damage through ailments and crowd control.' },
+  { name:'Amphibian Form', atk:'AGI', bonuses:'+1 AGI / Jump = ½ move speed',                desc:'Takes on the form of a frog or toad. Incredible jump distance allowing reposition without opportunity attacks. All-around offense and defense.' },
+  { name:'Porcine Form',   atk:'AGI', bonuses:'+1 BRW / +1 WILL',                            desc:'Takes on the form of a wild boar. Capable of devastating gore attacks. Absorbs fair damage while inflicting devastating ailments. Similar to Ursine.' },
+  { name:'Weasel Form',    atk:'AGI', bonuses:'+1 AGI / +2 Initiative',                      desc:'Takes on the form of a weasel, badger, or similar. Medium or smaller, very agile and aggressive. Highly efficient predators capable of taking down much larger prey.' },
+  { name:'Reptilian Form', atk:'BRW', bonuses:'+1 BRW',                                      desc:'Takes on the form of a giant snake or other reptile. Powerful constricting attacks and venomous fangs. Can be offensive or defensive (e.g. turtles).' },
+  { name:'Insectoid Form', atk:'BRW', bonuses:'+1 BRW / +1 WILL',                            desc:'Takes on the form of a giant insect such as a beetle or ant. Chitinous exoskeleton for absorbing damage and powerful pincers to hold enemies in place.' },
+  { name:'Piscine Form',   atk:'BRW', bonuses:'+1 BRW / Swim 30 ft',                         desc:'Takes on an aquatic predator form (shark, octopus). Purely aquatic but superior to other forms in the water.' },
+  { name:'Avian Form',     atk:'AGI', bonuses:'+1 AGI / Flying 30 ft',                       desc:'Takes on an aerial hunter form capable of fast, lethal attacks from above. The "glass cannon" — extremely high damage but unable to take much itself.' },
+  { name:'Ancient Form',   atk:'BRW', bonuses:'+1 WILL / +1 Armor / +50% fire damage taken', desc:'Takes on the form of a treant. Support form with ranged attack capabilities. Extremely vulnerable to fire. Many battlefield control opportunities.' },
+];
+
+const UTILITY_FORMS = [
+  { name:'Leaf Form',            bonuses:'+4 to Stealth',                                           desc:'Ability to hide in combat using an action while near any plant or tree. Gains +4 to stealth rolls outdoors. Grants ½ this bonus to allies while shapeshifted.' },
+  { name:'Feline Form',          bonuses:'—',                                                        desc:'(See Combat Feline Form for full details.)' },
+  { name:'Equine Form',          bonuses:'+10 ft move speed / +50% overland travel',                 desc:'Grants the druid and all allies +10 to movement speed in combat, and an extra 50% overland travel distance per day.' },
+  { name:'Flight Form',          bonuses:'2× move speed as fly / +1d4 initiative',                   desc:'Shapeshift into a small or smaller bird and fly. Flight form has double the druid\x27s movement speed. May use flight speed in combat. While in Flight Form, initiative for your whole party is increased by +1d4.' },
+  { name:'Aquatic Form',         bonuses:'2× move speed as swim / allies swim at normal speed',      desc:'Allows underwater breathing and swimming speed but is not suited for combat. Swim speed is double the druid\'s movement speed. Allies\' swimming speed equals their normal movement speed.' },
+];
+
+
 // ════════════════════════════════════════════════════════════════
 // DATA TABLES
 // ════════════════════════════════════════════════════════════════
@@ -2319,6 +2355,7 @@ let state = {
   currency: { copper:0, silver:0, gold:0, plat:0 },
   deathSaves: [false,false,false],
   pylCharges: [false,false],
+  _portraitDataUrl: null,
   vitalHP: 0,
   vitalTempHP: 0,
   vitalStamina: 0,
@@ -2330,6 +2367,7 @@ let state = {
   bloodChargesMax: 2,
   comboDiceCurrent: 0,
   ordersChargesCurrent: 0,
+  druidAPCurrent: 0,
   furyChargesCurrent: 0,
   skeletonChargesCurrent: 0,
   soulFragmentsCurrent: 0,
@@ -2925,6 +2963,44 @@ function adjustVital(which, delta) {
     state.vitalStamina = Math.max(0, (state.vitalStamina || 0) + delta);
     document.getElementById('disp-stamina').textContent = state.vitalStamina;
   }
+}
+
+function loadPortrait(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    const img = document.getElementById('portrait-img');
+    const placeholder = document.getElementById('portrait-placeholder');
+    const removeBtn = document.getElementById('portrait-remove');
+    if (img) { img.src = e.target.result; img.style.display = 'block'; }
+    if (placeholder) placeholder.style.display = 'none';
+    if (removeBtn) removeBtn.style.display = 'block';
+    // Store in state for save/load
+    state._portraitDataUrl = e.target.result;
+  };
+  reader.readAsDataURL(file);
+  event.target.value = '';
+}
+
+function removePortrait() {
+  const img = document.getElementById('portrait-img');
+  const placeholder = document.getElementById('portrait-placeholder');
+  const removeBtn = document.getElementById('portrait-remove');
+  if (img) { img.src = ''; img.style.display = 'none'; }
+  if (placeholder) placeholder.style.display = 'flex';
+  if (removeBtn) removeBtn.style.display = 'none';
+  state._portraitDataUrl = null;
+}
+
+function restorePortrait(dataUrl) {
+  if (!dataUrl) return;
+  const img = document.getElementById('portrait-img');
+  const placeholder = document.getElementById('portrait-placeholder');
+  const removeBtn = document.getElementById('portrait-remove');
+  if (img) { img.src = dataUrl; img.style.display = 'block'; }
+  if (placeholder) placeholder.style.display = 'none';
+  if (removeBtn) removeBtn.style.display = 'block';
 }
 
 function applyTheme(theme) {
@@ -4352,6 +4428,7 @@ function updateSecondaryResource(cls, spec, level) {
   if (cls === 'Pugilist')                         type = 'chi';
   else if (cls === 'Rogue' && level >= 2)         type = 'combo';
   else if (cls === 'Warlord')                     type = 'fury';
+  else if (cls === 'Druid' && level >= 2)         type = 'druid_ap';
   else if (cls === 'Warrior' && level >= 3 && (spec === 'Gladiator' || spec === 'Commander' || spec === 'Knight')) type = 'orders';
   else if (spec === 'Chronomancer')               type = 'strands';
   else if (spec === 'Path of the Crusader')       type = 'blood';
@@ -4417,6 +4494,28 @@ function updateSecondaryResource(cls, spec, level) {
     dieLabel.style.cssText = 'font-size:11px;color:var(--orange);font-family:var(--font-mono);margin-top:3px;text-align:center;width:100%;';
     dieLabel.textContent = `${state.comboDiceCurrent}/${maxDice} ${dieType}`;
     pipsEl.appendChild(dieLabel);
+
+  } else if (type === 'druid_ap') {
+    // Druid AP: 2 at level 2, +1 at levels 3,4,5,6,7,12
+    const bonusLevels = [3, 4, 5, 6, 7, 12];
+    const maxAP = 2 + bonusLevels.filter(l => level >= l).length;
+    if (state.druidAPCurrent > maxAP) state.druidAPCurrent = maxAP;
+    label.textContent = 'Action Points';
+    if (strandBtns) strandBtns.style.display = 'none';
+    pipsEl.innerHTML = '';
+    for (let i = 0; i < maxAP; i++) {
+      const pip = document.createElement('div');
+      const used = i < state.druidAPCurrent;
+      pip.className = 'sec-pip druid-ap-pip' + (used ? ' used' : '');
+      pip.textContent = used ? '🌿' : '🍃';
+      pip.title = `Action Point — ${used ? 'Spent' : 'Available'} (click to toggle)`;
+      const idx = i;
+      pip.addEventListener('click', () => {
+        state.druidAPCurrent = (state.druidAPCurrent === idx + 1) ? idx : idx + 1;
+        updateSecondaryResource(cls, spec, level);
+      });
+      pipsEl.appendChild(pip);
+    }
 
   } else if (type === 'orders') {
     // Issue Orders — Gladiator: 1 at level 3; Commander/Knight: 2 at level 3
@@ -4867,31 +4966,55 @@ function moveQuest(id, fromType, toType) {
 // ════════════════════════════════════════════════════════════════
 // SHAPESHIFTING
 // ════════════════════════════════════════════════════════════════
-const COMBAT_FORMS = [
-  { name:'Ursine Form',    atk:'BRW', bonuses:'+1 BRW / +1 Armor',                           desc:'Transforms into a bear of varying size. Tank/tough combat form. Soaks up damage while being no slouch at dealing it.' },
-  { name:'Ape Form',       atk:'BRW', bonuses:'+1 BRW / Climbing 30 ft',                     desc:'Transforms into an ape. All-around form — absorbs and deals damage while being versatile, if not the best at any one task.' },
-  { name:'Feline Form',    atk:'AGI', bonuses:'+1 AGI / +2 Stealth',                         desc:'Takes on a feline form — very agile, powerful, and stealthy. The DPS (high damage) form.' },
-  { name:'Lupine Form',    atk:'AGI', bonuses:'+1 AGI / Pack Tactics',                       desc:'Takes on the form of a wolf. Strong fighter with Pack Tactics. Offensive form that can also buff allies with howls.' },
-  { name:'Arachnid Form',  atk:'AGI', bonuses:'+1 AGI / Climbing 30 ft',                     desc:'Fast, capable of climbing walls and unleashing webbing. Scorpion also falls under this form. Incredible damage through ailments and crowd control.' },
-  { name:'Amphibian Form', atk:'AGI', bonuses:'+1 AGI / Jump = ½ move speed',                desc:'Takes on the form of a frog or toad. Incredible jump distance allowing reposition without opportunity attacks. All-around offense and defense.' },
-  { name:'Porcine Form',   atk:'AGI', bonuses:'+1 BRW / +1 WILL',                            desc:'Takes on the form of a wild boar. Capable of devastating gore attacks. Absorbs fair damage while inflicting devastating ailments. Similar to Ursine.' },
-  { name:'Weasel Form',    atk:'AGI', bonuses:'+1 AGI / +2 Initiative',                      desc:'Takes on the form of a weasel, badger, or similar. Medium or smaller, very agile and aggressive. Highly efficient predators capable of taking down much larger prey.' },
-  { name:'Reptilian Form', atk:'BRW', bonuses:'+1 BRW',                                      desc:'Takes on the form of a giant snake or other reptile. Powerful constricting attacks and venomous fangs. Can be offensive or defensive (e.g. turtles).' },
-  { name:'Insectoid Form', atk:'BRW', bonuses:'+1 BRW / +1 WILL',                            desc:'Takes on the form of a giant insect such as a beetle or ant. Chitinous exoskeleton for absorbing damage and powerful pincers to hold enemies in place.' },
-  { name:'Piscine Form',   atk:'BRW', bonuses:'+1 BRW / Swim 30 ft',                         desc:'Takes on an aquatic predator form (shark, octopus). Purely aquatic but superior to other forms in the water.' },
-  { name:'Avian Form',     atk:'AGI', bonuses:'+1 AGI / Flying 30 ft',                       desc:'Takes on an aerial hunter form capable of fast, lethal attacks from above. The "glass cannon" — extremely high damage but unable to take much itself.' },
-  { name:'Ancient Form',   atk:'BRW', bonuses:'+1 WILL / +1 Armor / +50% fire damage taken', desc:'Takes on the form of a treant. Support form with ranged attack capabilities. Extremely vulnerable to fire. Many battlefield control opportunities.' },
+
+const WARDEN_MASTERIES = {
+  ursine: {
+    label: 'Ursine Mastery',
+    form:  'Ursine Form',
+    color: '#c8a870',
+    bonuses: '+1 BRW / +1 Armor while shapeshifted. Bear basic attacks scale with BRW.',
+    ability: '<strong>Growl — 1 AP (Bonus Action, once per 3 turns):</strong> Growl a challenge at an enemy within 15 feet. Target must make a WILL saving throw or be forced to attack the Druid for 2 turns. DC 14+WILL.'
+  },
+  feline: {
+    label: 'Feline Mastery',
+    form:  'Feline Form',
+    color: '#c8a8e0',
+    bonuses: '+1 AGI / +2 Stealth while shapeshifted. Feline basic attacks scale with AGI. Panther Form.',
+    ability: '<strong>Sneak Attack:</strong> First attack made from stealth has an extra +2 chance to hit, +50% weapon damage, and +10% chance to critically strike.'
+  },
+  arachnid: {
+    label: 'Arachnid Mastery',
+    form:  'Arachnid Form',
+    color: '#7ec86e',
+    bonuses: '+1 AGI / +1 WILL. Ability to climb walls using movement speed. Spider basic attacks scale with AGI, deal 50% weapon damage, may attack a second time as a bonus action. Spider legs receive the benefit of AGI on each attack.',
+    ability: '<strong>Webbing — 1 AP (free once per shapeshift):</strong> Wrap a target in webs.'
+  }
+};
+
+const UTILITY_FORMS_OPTIONS = [
+  { value: 'Leaf Form',    label: 'Leaf Form',    bonuses: '+4 to Stealth', desc: 'Hide in combat near any plant/tree as an action. +4 stealth rolls outdoors. Grants half this bonus to allies while shapeshifted.' },
+  { value: 'Feline Form',  label: 'Feline Form',  bonuses: '—',             desc: 'Feline utility form — agile and stealthy.' },
+  { value: 'Equine Form',  label: 'Equine Form',  bonuses: '+10 ft move / +50% overland travel', desc: 'Grants druid and all allies +10 to movement speed in combat, and an extra 50% overland travel distance per day.' },
+  { value: 'Flight Form',  label: 'Flight Form',  bonuses: '2× fly speed / +1d4 initiative', desc: 'Shapeshift into a small or smaller bird and fly. Double movement speed in flight. May use flight speed in combat. Party initiative increased by +1d4.' },
+  { value: 'Aquatic Form', label: 'Aquatic Form', bonuses: '2× swim speed / allies swim normally', desc: 'Underwater breathing and swimming. Swim speed is double the druid\x27s movement speed. Allies\x27 swim speed equals their normal movement speed.' },
 ];
 
-const UTILITY_FORMS = [
-  { name:'Leaf Form',            bonuses:'+4 to Stealth',                                           desc:'Ability to hide in combat using an action while near any plant or tree. Gains +4 to stealth rolls outdoors. Grants ½ this bonus to allies while shapeshifted.' },
-  { name:'Feline Form',          bonuses:'—',                                                        desc:'(See Combat Feline Form for full details.)' },
-  { name:'Equine Form',          bonuses:'+10 ft move speed / +50% overland travel',                 desc:'Grants the druid and all allies +10 to movement speed in combat, and an extra 50% overland travel distance per day.' },
-  { name:'Flight Form',          bonuses:'2× move speed as fly / +1d4 initiative',                   desc:'Shapeshift into a small or smaller bird and fly. Flight form has double the druid\x27s movement speed. May use flight speed in combat. While in Flight Form, initiative for your whole party is increased by +1d4.' },
-  { name:'Aquatic Form',         bonuses:'2× move speed as swim / allies swim at normal speed',      desc:'Allows underwater breathing and swimming speed but is not suited for combat. Swim speed is double the druid\'s movement speed. Allies\' swimming speed equals their normal movement speed.' },
-];
+const KEEPER_FORM = {
+  form:  'Ancient Form',
+  color: '#a8c890',
+  title: 'Ancient Mastery — Treant Form',
+  detail: `<p style="margin-bottom:10px;"><strong style="color:var(--green);">Ancient Mastery — Treant Form</strong> — Gain +1 AP while in this form, and you have natural thorns (returns ½ your druid level in piercing damage to attackers).</p>
+<ul style="margin-left:16px;line-height:2;">
+  <li><strong>Rock Throw (1 AP)</strong></li>
+  <li>You are susceptible to fire damage: +3 damage from fire sources, +25% chance to be burned/ignited while in Treant form.</li>
+  <li><strong>Root</strong> — As a bonus action, root yourself in place (applying the <em>Rooted</em> status) to increase Rock Throw range up to 45 ft and increase its damage by 50%. Reduces your Defense by 2 while rooted. Disadvantage (−5) on AGI saves.</li>
+  <li><strong>Living Roots</strong> — While rooted, you may cast <strong>Entangling Vines</strong> using 1 AP instead of the mana cost.</li>
+</ul>`
+};
 
 let ssCharges = 2;
+let ssSelectedMastery = null;   // 'ursine' | 'feline' | 'arachnid'
+let ssSelectedUtility = null;   // one of UTILITY_FORMS_OPTIONS values
 
 function adjustShapeshiftCharge(delta) {
   ssCharges = Math.max(0, ssCharges + delta);
@@ -4900,73 +5023,231 @@ function adjustShapeshiftCharge(delta) {
 }
 
 function updateShapeshiftForm() {
-  const formName = document.getElementById('ss-current-form')?.value || '';
-  const infoBox  = document.getElementById('ss-active-info');
-  const bonusEl  = document.getElementById('ss-form-bonuses');
-  const descEl   = document.getElementById('ss-form-desc');
-  const ironFur  = document.getElementById('ss-iron-fur');
-  const ancBox   = document.getElementById('ss-ancient-rooted');
+  const formName  = document.getElementById('ss-current-form')?.value || '';
+  const infoBox   = document.getElementById('ss-active-info');
+  const bonusEl   = document.getElementById('ss-form-bonuses');
+  const descEl    = document.getElementById('ss-form-desc');
+  const ironFur   = document.getElementById('ss-iron-fur');
+  const ancBox    = document.getElementById('ss-ancient-rooted');
+  const detCard   = document.getElementById('ss-form-detail-card');
 
-  // Find form data
-  const allForms = [...COMBAT_FORMS, ...UTILITY_FORMS];
-  const form = allForms.find(f => f.name === formName);
+  const specVal = document.getElementById('sel-spec')?.value || '';
 
-  if (form && formName) {
+  if (formName) {
     if (infoBox) infoBox.style.display = '';
-    if (bonusEl) bonusEl.textContent = form.bonuses || '';
-    if (descEl)  descEl.textContent  = form.desc   || '';
+    // Look up bonuses / desc from data
+    const allForms = [...COMBAT_FORMS, ...UTILITY_FORMS];
+    const formData = allForms.find(f => f.name === formName);
+    if (formData) {
+      if (bonusEl) bonusEl.textContent = formData.bonuses || '';
+      if (descEl)  descEl.textContent  = formData.desc    || '';
+    }
   } else {
     if (infoBox) infoBox.style.display = 'none';
   }
 
-  // Iron Fur — shown for any combat form when Warden spec
-  const specVal = document.getElementById('sel-spec')?.value || '';
   if (ironFur) ironFur.style.display = (formName && specVal === 'Warden') ? '' : 'none';
-
-  // Ancient Form rooted checkbox
-  if (ancBox) ancBox.style.display = formName === 'Ancient Form' ? '' : 'none';
+  if (ancBox)  ancBox.style.display  = formName === 'Ancient Form' ? '' : 'none';
 }
 
-function buildShapeshiftTables() {
-  const combatBody = document.getElementById('ss-combat-forms-tbody');
-  const utilBody   = document.getElementById('ss-utility-forms-tbody');
-
-  if (combatBody) {
-    combatBody.innerHTML = '';
-    COMBAT_FORMS.forEach((f, i) => {
-      const tr = document.createElement('tr');
-      tr.style.cssText = `background:${i%2===0?'var(--bg2)':'var(--bg3)'};border-bottom:1px solid var(--border);`;
-      tr.innerHTML = `
-        <td style="padding:8px 12px;font-weight:700;color:var(--orange);white-space:nowrap;vertical-align:top;">${f.name}</td>
-        <td style="padding:8px 12px;text-align:center;font-family:var(--font-mono);font-size:11px;color:var(--accent);vertical-align:top;">${f.atk}</td>
-        <td style="padding:8px 12px;color:var(--green);font-family:var(--font-mono);font-size:11px;white-space:nowrap;vertical-align:top;">${f.bonuses}</td>
-        <td style="padding:8px 12px;color:var(--text2);vertical-align:top;">${f.desc}</td>`;
-      combatBody.appendChild(tr);
-    });
+function updateMasteryDetailCard(spec) {
+  const detCard  = document.getElementById('ss-form-detail-card');
+  const detTitle = document.getElementById('ss-form-detail-title');
+  const detBody  = document.getElementById('ss-form-detail-body');
+  const detDot   = document.getElementById('ss-form-detail-dot');
+  if (!detCard) return;
+  if (ssSelectedMastery && WARDEN_MASTERIES[ssSelectedMastery]) {
+    const m = WARDEN_MASTERIES[ssSelectedMastery];
+    detCard.style.display = '';
+    if (detDot)   detDot.style.background = m.color;
+    if (detTitle) detTitle.textContent = m.label + ' — ' + m.form;
+    if (detBody)  detBody.innerHTML = `<div style="margin-bottom:8px;color:var(--green);font-weight:600;">${m.bonuses}</div><div style="color:var(--text2);">${m.ability}</div>`;
+  } else {
+    detCard.style.display = 'none';
   }
+}
 
-  if (utilBody) {
-    utilBody.innerHTML = '';
-    UTILITY_FORMS.forEach((f, i) => {
-      const tr = document.createElement('tr');
-      tr.style.cssText = `background:${i%2===0?'var(--bg2)':'var(--bg3)'};border-bottom:1px solid var(--border);`;
-      tr.innerHTML = `
-        <td style="padding:8px 12px;font-weight:700;color:var(--teal);white-space:nowrap;vertical-align:top;">${f.name}</td>
-        <td style="padding:8px 12px;color:var(--green);font-family:var(--font-mono);font-size:11px;white-space:nowrap;vertical-align:top;">${f.bonuses}</td>
-        <td style="padding:8px 12px;color:var(--text2);vertical-align:top;">${f.desc}</td>`;
-      utilBody.appendChild(tr);
-    });
+function updateUtilityDetailCard() {
+  const detCard  = document.getElementById('ss-form-detail-card');
+  const detTitle = document.getElementById('ss-form-detail-title');
+  const detBody  = document.getElementById('ss-form-detail-body');
+  const detDot   = document.getElementById('ss-form-detail-dot');
+  if (!detCard) return;
+  if (ssSelectedUtility) {
+    const f = UTILITY_FORMS_OPTIONS.find(x => x.value === ssSelectedUtility);
+    if (f) {
+      detCard.style.display = '';
+      if (detDot)   detDot.style.background = 'var(--teal)';
+      if (detTitle) detTitle.textContent = f.label;
+      if (detBody)  detBody.innerHTML = `<span style="color:var(--green);font-weight:600;">${f.bonuses}</span><br><br>${f.desc}`;
+      return;
+    }
   }
+  detCard.style.display = 'none';
+}
+
+function populateFormDropdown(spec) {
+  const sel = document.getElementById('ss-current-form');
+  if (!sel) return;
+
+  // Clear all options except first
+  while (sel.options.length > 1) sel.remove(1);
+
+  if (spec === 'Warden' && ssSelectedMastery) {
+    const m = WARDEN_MASTERIES[ssSelectedMastery];
+    const opt = document.createElement('option');
+    opt.value = m.form; opt.textContent = m.form;
+    sel.appendChild(opt);
+  } else if (spec === 'Mender' && ssSelectedUtility) {
+    const opt = document.createElement('option');
+    opt.value = ssSelectedUtility; opt.textContent = ssSelectedUtility;
+    sel.appendChild(opt);
+  } else if (spec === 'Keeper') {
+    const opt = document.createElement('option');
+    opt.value = KEEPER_FORM.form; opt.textContent = KEEPER_FORM.form;
+    sel.appendChild(opt);
+  }
+  // Reset selection if current value no longer valid
+  if (sel.value === '' || !Array.from(sel.options).some(o => o.value === sel.value)) {
+    sel.value = '';
+  }
+  updateShapeshiftForm();
+}
+
+function applyMasteryHighlight(key) {
+  Object.keys(WARDEN_MASTERIES).forEach(k => {
+    const card = document.getElementById('ss-mastery-' + k);
+    if (card) {
+      card.style.borderColor = k === key ? WARDEN_MASTERIES[k].color : 'var(--border)';
+      card.style.background  = k === key ? 'rgba(255,255,255,.05)' : 'var(--bg3)';
+    }
+  });
+}
+
+function applyUtilityHighlight(val) {
+  UTILITY_FORMS_OPTIONS.forEach(f => {
+    const card = document.getElementById('ss-utility-' + f.value.replace(/ /g,'_'));
+    if (card) {
+      card.style.borderColor = f.value === val ? 'var(--teal)' : 'var(--border)';
+      card.style.background  = f.value === val ? 'rgba(61,204,199,.07)' : 'var(--bg3)';
+    }
+  });
+}
+
+function selectWardenMastery(key) {
+  ssSelectedMastery = key;
+  applyMasteryHighlight(key);
+  // Update detail card and dropdown without re-entering updateShapeshiftTab
+  const spec = document.getElementById('sel-spec')?.value;
+  updateMasteryDetailCard(spec);
+  populateFormDropdown(spec);
+}
+
+function selectMenderUtility(val) {
+  ssSelectedUtility = val;
+  applyUtilityHighlight(val);
+  const spec = document.getElementById('sel-spec')?.value;
+  updateUtilityDetailCard();
+  populateFormDropdown(spec);
 }
 
 function updateShapeshiftTab(cls, spec) {
+  const tabBtn  = document.getElementById('tab-btn-shapeshifting');
   const unavail = document.getElementById('shapeshift-unavailable');
   const cnt     = document.getElementById('shapeshift-content');
-  const isDruid = cls === 'Druid';
-  if (unavail) unavail.style.display = isDruid ? 'none' : '';
-  if (cnt)     cnt.style.display     = isDruid ? '' : 'none';
-  if (!isDruid) return;
-  updateShapeshiftForm();
+
+  const xp = parseInt(document.getElementById('inp-xp')?.value) || 0;
+  const level = getLevel(xp);
+  const isDruidLv2 = cls === 'Druid' && level >= 2;
+
+  // Show/hide the tab button itself
+  if (tabBtn) tabBtn.style.display = isDruidLv2 ? '' : 'none';
+
+  if (!cnt || !unavail) return;
+  unavail.style.display = isDruidLv2 ? 'none' : '';
+  cnt.style.display     = isDruidLv2 ? ''     : 'none';
+  if (!isDruidLv2) return;
+
+  const mastPicker = document.getElementById('ss-mastery-picker');
+  const utilPicker = document.getElementById('ss-utility-picker');
+  const detCard    = document.getElementById('ss-form-detail-card');
+  const detTitle   = document.getElementById('ss-form-detail-title');
+  const detBody    = document.getElementById('ss-form-detail-body');
+  const detDot     = document.getElementById('ss-form-detail-dot');
+
+  // -- Warden --
+  if (spec === 'Warden') {
+    if (mastPicker) {
+      mastPicker.style.display = '';
+      const optionsEl = document.getElementById('ss-mastery-options');
+      if (optionsEl && !optionsEl.children.length) {
+        // Build mastery cards once
+        Object.entries(WARDEN_MASTERIES).forEach(([key, m]) => {
+          const card = document.createElement('div');
+          card.id = 'ss-mastery-' + key;
+          card.style.cssText = `border:2px solid var(--border);border-radius:8px;padding:12px 14px;
+            background:var(--bg3);cursor:pointer;transition:all .2s;`;
+          card.innerHTML = `
+            <div style="font-weight:700;color:${m.color};font-size:14px;margin-bottom:6px;">${m.label}</div>
+            <div style="font-size:12px;color:var(--text2);line-height:1.6;margin-bottom:6px;">${m.bonuses}</div>
+            <div style="font-size:12px;color:var(--text3);line-height:1.5;">${m.ability}</div>`;
+          card.onclick = () => selectWardenMastery(key);
+          optionsEl.appendChild(card);
+        });
+      }
+      // Re-apply selection highlight (no recursion)
+      if (ssSelectedMastery) applyMasteryHighlight(ssSelectedMastery);
+    }
+    if (utilPicker) utilPicker.style.display = 'none';
+    // Detail card shows chosen mastery
+    if (ssSelectedMastery) applyMasteryHighlight(ssSelectedMastery);
+    updateMasteryDetailCard(spec);
+
+  // -- Mender --
+  } else if (spec === 'Mender') {
+    if (mastPicker) mastPicker.style.display = 'none';
+    if (utilPicker) {
+      utilPicker.style.display = '';
+      const optionsEl = document.getElementById('ss-utility-options');
+      if (optionsEl && !optionsEl.children.length) {
+        UTILITY_FORMS_OPTIONS.forEach(f => {
+          const card = document.createElement('div');
+          const safeId = 'ss-utility-' + f.value.replace(/ /g,'_');
+          card.id = safeId;
+          card.style.cssText = `border:2px solid var(--border);border-radius:8px;padding:10px 14px;
+            background:var(--bg3);cursor:pointer;transition:all .2s;`;
+          card.innerHTML = `
+            <div style="font-weight:700;color:var(--teal);font-size:13px;margin-bottom:4px;">${f.label}
+              <span style="font-size:11px;color:var(--green);font-weight:400;margin-left:8px;">${f.bonuses}</span>
+            </div>
+            <div style="font-size:12px;color:var(--text2);line-height:1.5;">${f.desc}</div>`;
+          card.onclick = () => selectMenderUtility(f.value);
+          optionsEl.appendChild(card);
+        });
+      }
+      if (ssSelectedUtility) applyUtilityHighlight(ssSelectedUtility);
+    }
+    updateUtilityDetailCard();
+
+  // -- Keeper --
+  } else if (spec === 'Keeper') {
+    if (mastPicker) mastPicker.style.display = 'none';
+    if (utilPicker) utilPicker.style.display = 'none';
+    if (detCard) {
+      detCard.style.display = '';
+      if (detDot)   detDot.style.background = KEEPER_FORM.color;
+      if (detTitle) detTitle.textContent = KEEPER_FORM.title;
+      if (detBody)  detBody.innerHTML = KEEPER_FORM.detail;
+    }
+
+  // -- No spec or other --
+  } else {
+    if (mastPicker) mastPicker.style.display = 'none';
+    if (utilPicker) utilPicker.style.display = 'none';
+    if (detCard)    detCard.style.display = 'none';
+  }
+
+  populateFormDropdown(spec);
 }
 
 // ════════════════════════════════════════════════════════════════
@@ -5193,6 +5474,7 @@ function saveCharacter() {
     fields: collectFormValues(),
     // Capture theme
     theme: document.documentElement.getAttribute('data-theme') || '',
+    portraitDataUrl: state._portraitDataUrl || null,
   };
 
   const blob = new Blob([JSON.stringify(saveData, null, 2)], { type: 'application/json' });
@@ -5245,6 +5527,7 @@ function loadCharacter(event) {
       if (s.battlemageFuryCurrent !== undefined) state.battlemageFuryCurrent = s.battlemageFuryCurrent;
 
       // Restore theme
+      if (data.portraitDataUrl) { state._portraitDataUrl = data.portraitDataUrl; restorePortrait(data.portraitDataUrl); }
       if (data.theme !== undefined) {
         document.documentElement.setAttribute('data-theme', data.theme);
         const sel = document.getElementById('theme-select');
@@ -5314,11 +5597,340 @@ function showSaveBanner(msg) {
 }
 
 // ════════════════════════════════════════════════════════════════
+// REST SYSTEM
+// ════════════════════════════════════════════════════════════════
+const LONG_REST_QUALITIES = [
+  { name:'Squalid',     eq:'Requires at least a fire',                     hp:1, stamina:1, mana:1, hitdie:0,   desc:'No hit die recovery. Without fire/warm bedding: +1 Exhaustion.' },
+  { name:'Poor',        eq:'Fire + 1 of tent, bedroll, or blanket',        hp:1, stamina:1, mana:1, hitdie:0,   desc:'Fire grants +1 to any hit die rolls.' },
+  { name:'Moderate',    eq:'Fire + 1 of tent/bedroll/blanket',             hp:2, stamina:1, mana:1, hitdie:1,   desc:'Base camp quality. Each extra piece of equipment may increase these values.' },
+  { name:'Comfortable', eq:'Fire + 2 of tent/bedroll/blanket',             hp:3, stamina:1, mana:1, hitdie:2,   desc:'' },
+  { name:'Great',       eq:'Fire + all camping equipment',                 hp:4, stamina:2, mana:2, hitdie:3,   desc:'' },
+];
+
+const FULL_REST_QUALITIES = [
+  { name:'Squalid',     cost:'50 cp', rep:'-',         hp:'1+PHY', stamina:2, mana:2, hitdie:2, exhaustion:1,
+    desc:'Moderate Long Rest + Chance of complication (1 in 6). Healing die used gain +2 effectiveness.' },
+  { name:'Poor',        cost:'1 sp',  rep:'-',         hp:'2+PHY', stamina:2, mana:2, hitdie:3, exhaustion:1,
+    desc:'HP = 2 + PHY modifier. Healing die gain +2 effectiveness. 3 hit die restored. Complication chance (1 in 8).' },
+  { name:'Modest',      cost:'3 sp',  rep:'-',         hp:'4+PHY', stamina:3, mana:3, hitdie:4, exhaustion:2,
+    desc:'HP = 4 + PHY modifier. Cleanses an additional stack of exhaustion.' },
+  { name:'Comfortable', cost:'7.5 sp',rep:'-',         hp:'6+PHY', stamina:4, mana:4, hitdie:5, exhaustion:2,
+    desc:'Hit die can be used to restore mana or stamina if not already granted by class kit.' },
+  { name:'Noble',       cost:'20 sp', rep:'Baron+',    hp:'8+PHY', stamina:4, mana:4, hitdie:'All', exhaustion:3,
+    desc:'Recovers all hit die. Cleanses up to 3 stacks of exhaustion.' },
+  { name:'Wealthy',     cost:'50 sp', rep:'Baron+',    hp:'10+PHY',stamina:'4+PHY', mana:'4+PHY', hitdie:'All', exhaustion:3,
+    desc:'Noble Full Rest + regain all hit die and health back.' },
+  { name:'Exquisite',   cost:'1 gp',  rep:'Viscount+', hp:'All',   stamina:'All', mana:'All', hitdie:'All', exhaustion:4,
+    desc:'Wealthy Full Rest + Regain all hit die & all hit points and all resources.' },
+  { name:'Royal',       cost:'7 gp',  rep:'Earl+',     hp:'All+2hd',stamina:'All+PHY', mana:'All+casting', hitdie:'All', exhaustion:'All',
+    desc:'Recover all resources. Go into next day with additional resources. All exhaustion stacks cleansed.' },
+];
+
+const COMPLICATIONS_TABLE = [
+  { roll:'1',     effect:`Night sweats and terrorized dreams. Don't recover any hit die during this rest and won't recover any until you rest again. Gain 2 stacks of exhaustion.` },
+  { roll:'2-3',   effect:`You have a secret admirer. They left 1d4 rations and a breakfast meal. All resource and health gains +1 in short and long rests for the next day.` },
+  { roll:'4-5',   effect:`Sleep interrupted by loud banging on your door. Falsely accused of a crime — town guards are coming for you.` },
+  { roll:'6-7',   effect:`You awake renewed, gaining the benefit of a Great Long Rest. Recover from up to 3 stacks of exhaustion.` },
+  { roll:'8-9',   effect:`Strangest of nightmares. Recovered hit die are lowered by 4. Suffer 1 stack of exhaustion.` },
+  { roll:'10-11', effect:`Pests found their way into your pack, spoiling some rations. Lose 1d6 rations.` },
+  { roll:'12-13', effect:`Door not quite closed. Somebody has made off with 1/2 your currency.` },
+  { roll:'14-15', effect:`Peaceful rest. May immediately make a PHY check to recover from a disease or ailment afflicting you (+6 to roll). Recover up to 2 stacks of exhaustion.` },
+  { roll:'16-17', effect:`Terrible rumors spread amongst the local population. Lose 1 reputation rank.` },
+  { roll:'18-19', effect:`Bitten by something carrying the plague. DC 12 PHY save or be poisoned for 24 hours, taking 4 damage every hour.` },
+  { roll:'20',    effect:`Your body needed the rest. Fell almost immediately into a deep and peaceful sleep. Recover all hit die. (Possibly add a random godly blessing based on chosen deity.)` },
+];
+
+let selectedLongRestQuality = null;
+let selectedFullRestQuality = null;
+
+function openRestModal() {
+  document.getElementById('rest-modal').style.display = 'block';
+  document.getElementById('rest-result').style.display = 'none';
+  setRestTab('short');
+  buildLongRestOptions();
+  buildFullRestOptions();
+}
+
+function closeRestModal() {
+  document.getElementById('rest-modal').style.display = 'none';
+}
+
+function setRestTab(tab) {
+  ['short','long','full'].forEach(t => {
+    const btn   = document.getElementById('rtab-' + t);
+    const panel = document.getElementById('rpanel-' + t);
+    const active = t === tab;
+    btn.style.background = active ? 'var(--teal)' : 'var(--bg3)';
+    btn.style.color      = active ? 'var(--bg)' : 'var(--text2)';
+    panel.style.display  = active ? '' : 'none';
+  });
+  document.getElementById('rest-result').style.display = 'none';
+}
+
+function buildLongRestOptions() {
+  const el = document.getElementById('long-rest-options');
+  if (!el) return;
+  el.innerHTML = '';
+  LONG_REST_QUALITIES.forEach((q, i) => {
+    const row = document.createElement('div');
+    row.style.cssText = `display:flex;align-items:center;gap:10px;padding:8px 12px;border-radius:6px;
+      background:var(--bg3);border:1px solid var(--border);cursor:pointer;transition:all .15s;`;
+    row.onclick = () => selectLongRestQuality(i);
+    row.id = 'lrq-' + i;
+    row.innerHTML = `
+      <span style="font-weight:700;color:var(--gold);min-width:90px;font-size:13px;">${q.name}</span>
+      <span style="font-size:12px;color:var(--text3);">${q.eq}</span>
+      <div style="margin-left:auto;display:flex;gap:10px;font-family:var(--font-mono);font-size:11px;">
+        <span style="color:var(--green);">+${q.hp} HP</span>
+        <span style="color:var(--accent);">+${q.mana} Res</span>
+        <span style="color:var(--text2);">${q.hitdie} HD</span>
+      </div>`;
+    el.appendChild(row);
+  });
+}
+
+function selectLongRestQuality(idx) {
+  selectedLongRestQuality = idx;
+  LONG_REST_QUALITIES.forEach((_, i) => {
+    const row = document.getElementById('lrq-' + i);
+    if (row) {
+      row.style.borderColor = i === idx ? 'var(--teal)' : 'var(--border)';
+      row.style.background  = i === idx ? 'rgba(61,204,199,.1)' : 'var(--bg3)';
+    }
+  });
+  const q = LONG_REST_QUALITIES[idx];
+  const preview = document.getElementById('long-rest-preview');
+  const vals    = document.getElementById('long-rest-values');
+  if (preview) preview.style.display = '';
+  if (vals) vals.innerHTML = `
+    <div style="text-align:center;"><div style="font-size:20px;font-weight:700;color:var(--green);">+${q.hp}</div><div style="font-size:10px;color:var(--text3);">HP</div></div>
+    <div style="text-align:center;"><div style="font-size:20px;font-weight:700;color:var(--accent);">+${q.mana}</div><div style="font-size:10px;color:var(--text3);">Mana/Stamina</div></div>
+    <div style="text-align:center;"><div style="font-size:20px;font-weight:700;color:var(--text2);">${q.hitdie}</div><div style="font-size:10px;color:var(--text3);">Hit Die</div></div>
+    ${q.desc ? `<div style="font-size:11px;color:var(--text3);align-self:center;max-width:260px;">${q.desc}</div>` : ''}`;
+}
+
+function buildFullRestOptions() {
+  const el = document.getElementById('full-rest-options');
+  if (!el) return;
+  el.innerHTML = '';
+  FULL_REST_QUALITIES.forEach((q, i) => {
+    const row = document.createElement('div');
+    row.style.cssText = `display:flex;align-items:center;gap:10px;padding:8px 12px;border-radius:6px;
+      background:var(--bg3);border:1px solid var(--border);cursor:pointer;transition:all .15s;`;
+    row.onclick = () => selectFullRestQuality(i);
+    row.id = 'frq-' + i;
+    row.innerHTML = `
+      <span style="font-weight:700;color:var(--gold);min-width:90px;font-size:13px;">${q.name}</span>
+      <span style="font-size:11px;color:var(--text3);min-width:50px;">${q.cost}</span>
+      <span style="font-size:11px;color:var(--purple);">${q.rep}</span>
+      <div style="margin-left:auto;display:flex;gap:8px;font-family:var(--font-mono);font-size:11px;">
+        <span style="color:var(--green);">+${q.hp} HP</span>
+        <span style="color:var(--accent);">+${q.stamina}/${q.mana} Res</span>
+        <span style="color:var(--orange);">-${q.exhaustion} Exh</span>
+      </div>`;
+    el.appendChild(row);
+  });
+}
+
+function selectFullRestQuality(idx) {
+  selectedFullRestQuality = idx;
+  FULL_REST_QUALITIES.forEach((_, i) => {
+    const row = document.getElementById('frq-' + i);
+    if (row) {
+      row.style.borderColor = i === idx ? 'var(--gold)' : 'var(--border)';
+      row.style.background  = i === idx ? 'rgba(240,168,64,.08)' : 'var(--bg3)';
+    }
+  });
+  const q = FULL_REST_QUALITIES[idx];
+  const preview = document.getElementById('full-rest-preview');
+  const vals    = document.getElementById('full-rest-values');
+  const desc    = document.getElementById('full-rest-desc');
+  if (preview) preview.style.display = '';
+  if (vals) vals.innerHTML = `
+    <div style="text-align:center;"><div style="font-size:20px;font-weight:700;color:var(--green);">${q.hp}</div><div style="font-size:10px;color:var(--text3);">HP</div></div>
+    <div style="text-align:center;"><div style="font-size:20px;font-weight:700;color:var(--accent);">${q.stamina}</div><div style="font-size:10px;color:var(--text3);">Stamina/Mana</div></div>
+    <div style="text-align:center;"><div style="font-size:20px;font-weight:700;color:var(--accent);">${q.mana}</div><div style="font-size:10px;color:var(--text3);">Mana</div></div>
+    <div style="text-align:center;"><div style="font-size:20px;font-weight:700;color:var(--text2);">${q.hitdie}</div><div style="font-size:10px;color:var(--text3);">Hit Die</div></div>
+    <div style="text-align:center;"><div style="font-size:20px;font-weight:700;color:var(--orange);">-${q.exhaustion}</div><div style="font-size:10px;color:var(--text3);">Exhaustion</div></div>`;
+  if (desc) desc.textContent = q.desc;
+}
+
+function getPhyMod() {
+  const rawMod = calcModifier(getBuffedScore('PHY'));
+  return typeof rawMod === 'number' ? rawMod : 0;
+}
+
+function applyRest(type, opts) {
+  const resultEl = document.getElementById('rest-result');
+  const lines = [];
+  const phy = getPhyMod();
+
+  if (type === 'short') {
+    // +1 resource (mana or stamina)
+    state.vitalStamina = (state.vitalStamina || 0) + 1;
+    document.getElementById('disp-stamina').textContent = state.vitalStamina;
+    lines.push('✓ Short Rest taken. +1 Resource recovered.');
+    lines.push('ℹ No hit die recovered. Use hit die manually with a healer\x27s kit to recover HP.');
+  }
+  else if (type === 'long') {
+    const q = opts;
+    const hpGain = q.hp;
+    const resGain = q.mana;
+    state.vitalHP       = (state.vitalHP || 0) + hpGain;
+    state.vitalStamina  = (state.vitalStamina || 0) + resGain;
+    document.getElementById('disp-hp').textContent      = state.vitalHP;
+    document.getElementById('disp-stamina').textContent = state.vitalStamina;
+    lines.push(`✓ Long Rest (${q.name}) taken.`);
+    lines.push(`• HP: +${hpGain}  |  Resource: +${resGain}  |  Hit Die restored: ${q.hitdie}`);
+    if (q.desc) lines.push(`• Note: ${q.desc}`);
+    lines.push('ℹ Adjust HP and Hit Die manually if you used any during the rest.');
+  }
+  else if (type === 'full') {
+    const q = opts;
+    // Parse HP recovery
+    let hpGain = 0;
+    if (q.hp === 'All' || q.hp.startsWith('All')) {
+      hpGain = 0; // player manages max HP
+      lines.push(`• HP: Full recovery (${q.hp.includes('2hd') ? '+ 2 hit die' : 'all hit points'}) — adjust manually`);
+    } else {
+      const match = q.hp.match(/^(\d+)\+PHY$/);
+      hpGain = match ? (parseInt(match[1]) + phy) : 0;
+      state.vitalHP = (state.vitalHP || 0) + hpGain;
+      document.getElementById('disp-hp').textContent = state.vitalHP;
+      lines.push(`• HP: +${hpGain} (${q.hp} with PHY mod ${phy >= 0 ? '+' : ''}${phy})`);
+    }
+    // Resource recovery
+    let resGain = q.stamina;
+    if (typeof resGain === 'number') {
+      state.vitalStamina = (state.vitalStamina || 0) + resGain;
+      document.getElementById('disp-stamina').textContent = state.vitalStamina;
+      lines.push(`• Resource: +${resGain}`);
+    } else {
+      lines.push(`• Resource: ${resGain} — adjust manually`);
+    }
+    // Exhaustion reduction
+    const exEl = document.getElementById('cg-exhaustion');
+    if (exEl) {
+      const exRed = q.exhaustion === 'All' ? parseInt(exEl.value) : Math.min(parseInt(exEl.value), q.exhaustion);
+      const newEx = Math.max(0, parseInt(exEl.value) - exRed);
+      exEl.value = newEx;
+      updateExhaustionEffect();
+      lines.push(`• Exhaustion: reduced by ${exRed} (now ${newEx})`);
+    }
+    lines.push(`• Hit Die: ${q.hitdie} — adjust manually`);
+    lines.push(`✓ Full Rest (${q.name}, ${q.cost}) taken.`);
+    if (q.desc) lines.push(`ℹ ${q.desc}`);
+  }
+
+  if (resultEl) {
+    resultEl.innerHTML = lines.map(l => `<div style="margin-bottom:3px;">${l}</div>`).join('');
+    resultEl.style.display = '';
+  }
+  recalc();
+}
+
+function confirmLongRest() {
+  if (selectedLongRestQuality === null) {
+    alert('Please select a camp quality first.');
+    return;
+  }
+  applyRest('long', LONG_REST_QUALITIES[selectedLongRestQuality]);
+}
+
+function confirmFullRest() {
+  if (selectedFullRestQuality === null) {
+    alert('Please select a lodging quality first.');
+    return;
+  }
+  applyRest('full', FULL_REST_QUALITIES[selectedFullRestQuality]);
+}
+
+// ════════════════════════════════════════════════════════════════
 // START
 // ════════════════════════════════════════════════════════════════
+
+
 init();
 // Run after DOM is ready
 initCollapsibleCards();
 </script>
+
+<!-- ═══════════════════════════════ REST MODAL ══════════════════════════════ -->
+<div id="rest-modal" style="display:none;position:fixed;inset:0;z-index:1000;
+     background:rgba(0,0,0,.75);overflow-y:auto;padding:24px 16px;">
+  <div style="max-width:680px;margin:0 auto;background:var(--bg2);border:1px solid var(--border);
+       border-radius:12px;overflow:hidden;box-shadow:0 20px 60px rgba(0,0,0,.6);">
+
+    <!-- Header -->
+    <div style="background:var(--bg3);padding:16px 20px;display:flex;align-items:center;gap:10px;border-bottom:1px solid var(--border);">
+      <span style="font-size:20px;">⛺</span>
+      <span style="font-family:var(--font-head);font-size:14px;letter-spacing:.08em;text-transform:uppercase;color:var(--text);">Take a Rest</span>
+      <button onclick="closeRestModal()" style="margin-left:auto;background:transparent;border:none;color:var(--text3);font-size:18px;cursor:pointer;line-height:1;">✕</button>
+    </div>
+
+    <!-- Rest type tabs -->
+    <div style="display:flex;border-bottom:1px solid var(--border);">
+      <button id="rtab-short" onclick="setRestTab('short')"
+        style="flex:1;padding:12px;background:var(--teal);color:var(--bg);border:none;cursor:pointer;font-family:var(--font-head);font-size:11px;letter-spacing:.07em;text-transform:uppercase;">Short Rest</button>
+      <button id="rtab-long" onclick="setRestTab('long')"
+        style="flex:1;padding:12px;background:var(--bg3);color:var(--text2);border:none;cursor:pointer;font-family:var(--font-head);font-size:11px;letter-spacing:.07em;text-transform:uppercase;border-left:1px solid var(--border);">Long Rest</button>
+      <button id="rtab-full" onclick="setRestTab('full')"
+        style="flex:1;padding:12px;background:var(--bg3);color:var(--text2);border:none;cursor:pointer;font-family:var(--font-head);font-size:11px;letter-spacing:.07em;text-transform:uppercase;border-left:1px solid var(--border);">Full Rest</button>
+    </div>
+
+    <!-- Short Rest content -->
+    <div id="rpanel-short" style="padding:20px;">
+      <p style="font-size:13px;color:var(--text2);line-height:1.6;margin-bottom:16px;">
+        <strong style="color:var(--text);">Short Rest</strong> — Lasts ~30 minutes. Drink potions, ready items, cast preparatory spells. 
+        Stamina users recover <strong>1 Stamina</strong>. Mana users recover <strong>1 Mana</strong>. 
+        <em>No hit die are recovered.</em> A healer's kit is required to use hit die during a short rest.
+      </p>
+      <div style="background:var(--bg3);border-radius:8px;padding:14px 16px;margin-bottom:16px;">
+        <div style="font-size:10px;color:var(--text3);font-family:var(--font-mono);margin-bottom:10px;">RECOVERIES</div>
+        <div style="display:flex;gap:16px;flex-wrap:wrap;">
+          <div style="text-align:center;"><div style="font-size:22px;font-weight:700;color:var(--green);">+1</div><div style="font-size:10px;color:var(--text3);">Mana/Stamina</div></div>
+          <div style="text-align:center;"><div style="font-size:22px;font-weight:700;color:var(--text3);">0</div><div style="font-size:10px;color:var(--text3);">Hit Die</div></div>
+        </div>
+      </div>
+      <button onclick="applyRest('short',{})" class="btn gold" style="width:100%;padding:10px;font-size:13px;">⚡ Take Short Rest (+1 Resource)</button>
+    </div>
+
+    <!-- Long Rest content -->
+    <div id="rpanel-long" style="padding:20px;display:none;">
+      <p style="font-size:13px;color:var(--text2);line-height:1.6;margin-bottom:12px;">
+        <strong style="color:var(--text);">Long Rest</strong> — 6 hours. First 4 hours: +1 HP, +1 Mana, +1 Stamina automatically. 
+        After 4 hours: restore up to 1 hit die. Benefits depend on camp quality.
+      </p>
+      <div style="font-size:10px;color:var(--text3);font-family:var(--font-mono);margin-bottom:8px;">WILDERNESS CAMP QUALITY</div>
+      <div id="long-rest-options" style="display:flex;flex-direction:column;gap:6px;margin-bottom:16px;"></div>
+      <div id="long-rest-preview" style="background:var(--bg3);border-radius:8px;padding:12px 14px;margin-bottom:14px;display:none;">
+        <div style="font-size:10px;color:var(--text3);font-family:var(--font-mono);margin-bottom:6px;">RECOVERY PREVIEW</div>
+        <div id="long-rest-values" style="display:flex;gap:16px;flex-wrap:wrap;"></div>
+      </div>
+      <button onclick="confirmLongRest()" class="btn gold" style="width:100%;padding:10px;font-size:13px;">🌙 Take Long Rest</button>
+    </div>
+
+    <!-- Full Rest content -->
+    <div id="rpanel-full" style="padding:20px;display:none;">
+      <p style="font-size:13px;color:var(--text2);line-height:1.6;margin-bottom:12px;">
+        <strong style="color:var(--text);">Full Rest</strong> — Requires an inn, tavern, or safe shelter designated by your GM. 
+        Benefits depend on lodging quality. Rations must be eaten.
+      </p>
+      <div style="font-size:10px;color:var(--text3);font-family:var(--font-mono);margin-bottom:8px;">LODGING QUALITY</div>
+      <div id="full-rest-options" style="display:flex;flex-direction:column;gap:6px;margin-bottom:16px;"></div>
+      <div id="full-rest-preview" style="background:var(--bg3);border-radius:8px;padding:12px 14px;margin-bottom:14px;display:none;">
+        <div style="font-size:10px;color:var(--text3);font-family:var(--font-mono);margin-bottom:6px;">RECOVERY PREVIEW</div>
+        <div id="full-rest-values" style="display:flex;gap:16px;flex-wrap:wrap;margin-bottom:8px;"></div>
+        <div id="full-rest-desc" style="font-size:12px;color:var(--text2);line-height:1.5;"></div>
+      </div>
+      <button onclick="confirmFullRest()" class="btn gold" style="width:100%;padding:10px;font-size:13px;">🏨 Take Full Rest</button>
+    </div>
+
+    <!-- Result banner -->
+    <div id="rest-result" style="display:none;padding:14px 20px;background:rgba(29,158,117,.12);
+         border-top:1px solid var(--teal);font-size:13px;color:var(--teal);line-height:1.6;"></div>
+  </div>
+</div>
+
 </body>
 </html>
