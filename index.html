@@ -3,6 +3,8 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
+  <!-- Supabase SDK -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Legends of the Vanguard — Character Sheet</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -745,13 +747,127 @@ select option { background: var(--bg3); }
 </head>
 <body>
 <div class="app">
+<!-- ═══════════ AUTH OVERLAY ═══════════ -->
+<div id="auth-overlay" style="
+  position:fixed;inset:0;z-index:9999;
+  background:linear-gradient(135deg,#0d0d12 0%,#12101a 50%,#0d1018 100%);
+  display:flex;align-items:center;justify-content:center;
+">
+  <div style="position:absolute;inset:0;overflow:hidden;pointer-events:none;">
+    <div style="position:absolute;top:-20%;left:-10%;width:600px;height:600px;
+      background:radial-gradient(circle,rgba(61,204,199,.07) 0%,transparent 70%);border-radius:50%;"></div>
+    <div style="position:absolute;bottom:-10%;right:-5%;width:500px;height:500px;
+      background:radial-gradient(circle,rgba(168,100,224,.07) 0%,transparent 70%);border-radius:50%;"></div>
+  </div>
+  <div style="
+    background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.08);border-radius:16px;
+    padding:48px 44px;width:100%;max-width:420px;position:relative;backdrop-filter:blur(10px);
+    box-shadow:0 40px 80px rgba(0,0,0,.6),0 0 0 1px rgba(255,255,255,.04) inset;
+  ">
+    <div style="text-align:center;margin-bottom:32px;">
+      <div style="font-size:12px;letter-spacing:.25em;color:rgba(61,204,199,.7);text-transform:uppercase;margin-bottom:8px;">
+        ✦ Legends of the Vanguard ✦
+      </div>
+      <div style="font-size:28px;font-weight:700;color:#fff;letter-spacing:.02em;">Character Vault</div>
+      <div style="width:40px;height:2px;background:linear-gradient(90deg,transparent,rgba(61,204,199,.6),transparent);margin:14px auto 0;"></div>
+    </div>
+    <div style="display:flex;background:rgba(0,0,0,.3);border-radius:8px;padding:3px;margin-bottom:28px;">
+      <button id="auth-tab-login" onclick="switchAuthTab('login')"
+        style="flex:1;padding:8px;border:none;border-radius:6px;cursor:pointer;font-size:13px;letter-spacing:.05em;
+               background:rgba(61,204,199,.15);color:#3dccca;font-weight:600;transition:all .2s;">
+        Sign In
+      </button>
+      <button id="auth-tab-register" onclick="switchAuthTab('register')"
+        style="flex:1;padding:8px;border:none;border-radius:6px;cursor:pointer;font-size:13px;letter-spacing:.05em;
+               background:transparent;color:rgba(255,255,255,.4);transition:all .2s;">
+        Create Account
+      </button>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:14px;margin-bottom:24px;">
+      <div id="auth-name-field" style="display:none;">
+        <label style="font-size:10px;letter-spacing:.1em;color:rgba(255,255,255,.4);text-transform:uppercase;display:block;margin-bottom:6px;">Display Name</label>
+        <input id="auth-displayname" type="text" placeholder="Adventurer's name..."
+          style="width:100%;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);
+                 border-radius:8px;color:#fff;font-size:14px;padding:11px 14px;outline:none;box-sizing:border-box;"
+          onkeydown="if(event.key==='Enter')handleAuthSubmit()">
+      </div>
+      <div>
+        <label style="font-size:10px;letter-spacing:.1em;color:rgba(255,255,255,.4);text-transform:uppercase;display:block;margin-bottom:6px;">Email</label>
+        <input id="auth-email" type="email" placeholder="your@email.com"
+          style="width:100%;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);
+                 border-radius:8px;color:#fff;font-size:14px;padding:11px 14px;outline:none;box-sizing:border-box;"
+          onkeydown="if(event.key==='Enter')handleAuthSubmit()">
+      </div>
+      <div>
+        <label style="font-size:10px;letter-spacing:.1em;color:rgba(255,255,255,.4);text-transform:uppercase;display:block;margin-bottom:6px;">Password</label>
+        <input id="auth-password" type="password" placeholder="••••••••"
+          style="width:100%;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);
+                 border-radius:8px;color:#fff;font-size:14px;padding:11px 14px;outline:none;box-sizing:border-box;"
+          onkeydown="if(event.key==='Enter')handleAuthSubmit()">
+      </div>
+    </div>
+    <div id="auth-message" style="display:none;font-size:13px;padding:10px 14px;border-radius:6px;margin-bottom:16px;text-align:center;"></div>
+    <button id="auth-submit-btn" onclick="handleAuthSubmit()"
+      style="width:100%;padding:13px;background:linear-gradient(135deg,#3dccca,#2ab5a0);
+             border:none;border-radius:8px;color:#0d1018;font-size:14px;font-weight:700;
+             letter-spacing:.08em;cursor:pointer;transition:all .2s;text-transform:uppercase;">
+      Sign In
+    </button>
+    <div id="auth-config-warning" style="display:none;margin-top:20px;padding:12px 14px;
+      background:rgba(240,144,50,.08);border:1px solid rgba(240,144,50,.25);border-radius:8px;
+      font-size:12px;color:rgba(240,144,50,.8);line-height:1.6;text-align:center;">
+      ⚙️ Supabase not configured yet.<br>
+      Add your project URL and anon key at the top of the script to enable cloud saves.<br>
+      <button onclick="skipAuth()" style="margin-top:10px;padding:6px 16px;background:rgba(240,144,50,.15);
+        border:1px solid rgba(240,144,50,.3);border-radius:5px;color:rgba(240,144,50,.9);cursor:pointer;font-size:12px;">
+        Continue Without Login (Local Only)
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════ CHARACTER SELECT ═══════════ -->
+<div id="char-select-overlay" style="display:none;position:fixed;inset:0;z-index:9998;
+  background:linear-gradient(135deg,#0d0d12 0%,#12101a 50%,#0d1018 100%);overflow-y:auto;padding:32px 16px;">
+  <div style="max-width:760px;margin:0 auto;">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:32px;flex-wrap:wrap;gap:12px;">
+      <div>
+        <div style="font-size:12px;letter-spacing:.2em;color:rgba(61,204,199,.7);text-transform:uppercase;margin-bottom:6px;">✦ Legends of the Vanguard ✦</div>
+        <div style="font-size:26px;font-weight:700;color:#fff;">Your Characters</div>
+      </div>
+      <div style="display:flex;gap:10px;align-items:center;">
+        <span id="char-select-user" style="font-size:12px;color:rgba(255,255,255,.4);"></span>
+        <button onclick="signOut()"
+          style="padding:6px 14px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);
+                 border-radius:6px;color:rgba(255,255,255,.5);font-size:12px;cursor:pointer;">Sign Out</button>
+      </div>
+    </div>
+    <div id="char-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:16px;margin-bottom:20px;"></div>
+    <button onclick="createNewCharacter()"
+      style="width:100%;padding:16px;background:rgba(61,204,199,.06);border:1px dashed rgba(61,204,199,.3);
+             border-radius:12px;color:rgba(61,204,199,.7);font-size:14px;letter-spacing:.08em;
+             cursor:pointer;transition:all .2s;text-transform:uppercase;"
+      onmouseenter="this.style.background='rgba(61,204,199,.1)'"
+      onmouseleave="this.style.background='rgba(61,204,199,.06)'">
+      + New Character
+    </button>
+  </div>
+</div>
+
+
 
 <!-- HEADER -->
 <div class="header">
   <div></div>
   <div>
-    <div class="header-title">Legends of the Vanguard</div>
-    <div class="header-sub">Character Sheet</div>
+    <div style="display:flex;flex-direction:column;gap:2px;">
+      <div class="header-title">Legends of the Vanguard</div>
+      <input id="char-name-input" type="text" placeholder="Character Name..."
+        onchange="scheduleCloudSave()" oninput="scheduleCloudSave()"
+        style="background:transparent;border:none;border-bottom:1px solid rgba(255,255,255,.15);
+               color:rgba(255,255,255,.6);font-size:11px;letter-spacing:.06em;padding:2px 0;
+               font-family:var(--font-mono);width:200px;outline:none;">
+    </div>
   </div>
   <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;justify-content:flex-end;">
     <div style="display:flex;gap:4px;">
@@ -759,6 +875,15 @@ select option { background: var(--bg3); }
         style="padding:4px 10px;font-size:10px;letter-spacing:.05em;">⊟ Collapse All</button>
       <button class="btn" onclick="expandAllCards()" title="Expand all cards"
         style="padding:4px 10px;font-size:10px;letter-spacing:.05em;">⊞ Expand All</button>
+      <button id="cloud-save-btn" onclick="cloudSaveCharacter()" title="Save to cloud"
+        style="display:none;padding:4px 12px;font-size:10px;letter-spacing:.05em;background:rgba(61,204,199,.12);
+               border:1px solid rgba(61,204,199,.35);border-radius:4px;color:var(--teal);cursor:pointer;
+               transition:all .2s;font-family:var(--font-mono);text-transform:uppercase;">☁ Cloud Save</button>
+      <button id="char-list-btn" onclick="showCharSelect()" title="Switch character"
+        style="display:none;padding:4px 12px;font-size:10px;letter-spacing:.05em;background:rgba(255,255,255,.05);
+               border:1px solid rgba(255,255,255,.12);border-radius:4px;color:var(--text3);cursor:pointer;
+               font-family:var(--font-mono);text-transform:uppercase;">⚔ Characters</button>
+      <span id="autosave-indicator" style="font-size:10px;color:var(--text3);font-family:var(--font-mono);opacity:0.4;transition:opacity .5s;white-space:nowrap;"></span>
       <button class="btn gold" onclick="saveCharacter()" title="Save character to file"
         style="padding:4px 12px;font-size:10px;letter-spacing:.05em;">💾 Save</button>
       <label class="btn" title="Load character from file"
@@ -2760,6 +2885,9 @@ function recalc() {
   updateMCResourceVital();
   // Refresh shapeshifting tab
   updateShapeshiftTab(cls, spec);
+  // Schedule auto-save (local + cloud)
+  scheduleAutoSave();
+  if (currentCharId) scheduleCloudSave();
 }
 
 // ── MULTICLASS ──────────────────────────────────────────────────────────────
@@ -4500,7 +4628,7 @@ function updateSecondaryResource(cls, spec, level) {
     const bonusLevels = [3, 4, 5, 6, 7, 12];
     const maxAP = 2 + bonusLevels.filter(l => level >= l).length;
     if (state.druidAPCurrent > maxAP) state.druidAPCurrent = maxAP;
-    label.textContent = 'Action Points';
+    label.textContent = 'Affinity Points';
     if (strandBtns) strandBtns.style.display = 'none';
     pipsEl.innerHTML = '';
     for (let i = 0; i < maxAP; i++) {
@@ -4508,7 +4636,7 @@ function updateSecondaryResource(cls, spec, level) {
       const used = i < state.druidAPCurrent;
       pip.className = 'sec-pip druid-ap-pip' + (used ? ' used' : '');
       pip.textContent = used ? '🌿' : '🍃';
-      pip.title = `Action Point — ${used ? 'Spent' : 'Available'} (click to toggle)`;
+      pip.title = `Affinity Point — ${used ? 'Spent' : 'Available'} (click to toggle)`;
       const idx = i;
       pip.addEventListener('click', () => {
         state.druidAPCurrent = (state.druidAPCurrent === idx + 1) ? idx : idx + 1;
@@ -5426,7 +5554,6 @@ function initCollapsibleCards() {
 // SAVE / LOAD
 // ════════════════════════════════════════════════════════════════
 function collectFormValues() {
-  // Collect all input/select/textarea values by their IDs
   const fields = {};
   document.querySelectorAll('input[id], select[id], textarea[id]').forEach(el => {
     if (el.type === 'checkbox') fields[el.id] = el.checked;
@@ -5435,48 +5562,180 @@ function collectFormValues() {
   return fields;
 }
 
-function saveCharacter() {
-  const charName = document.getElementById('inp-charname')?.value
-    || document.querySelector('.header-title')?.textContent
-    || 'character';
-
-  const saveData = {
-    version: 2,
+function buildSaveData() {
+  return {
+    version: 3,
     savedAt: new Date().toISOString(),
     state: {
-      baseStats:            state.baseStats,
-      skillPM:              state.skillPM,
-      skillPointHistory:    state.skillPointHistory,
-      lockedLevels:         [...state.lockedLevels],
-      gearStats:            state.gearStats,
-      gearRows:             state.gearRows,
-      professions:          state.professions,
-      buffStatTotals:       state.buffStatTotals,
+      baseStats:                state.baseStats,
+      skillPM:                  state.skillPM,
+      skillPointHistory:        state.skillPointHistory,
+      lockedLevels:             [...state.lockedLevels],
+      gearStats:                state.gearStats,
+      gearRows:                 state.gearRows,
+      professions:              state.professions,
+      buffStatTotals:           state.buffStatTotals,
       inventoryGearModBufStats: state.inventoryGearModBufStats,
-      deathSuccesses:       state.deathSuccesses,
-      deathFails:           state.deathFails,
-      pylCharges:           state.pylCharges,
-      vitalHP:              state.vitalHP,
-      vitalTempHP:          state.vitalTempHP,
-      vitalStamina:         state.vitalStamina,
-      multiclasses:         state.multiclasses,
-      mainClassLevel:       state.mainClassLevel,
-      chiCurrent:           state.chiCurrent,
-      strandsCurrent:       state.strandsCurrent,
-      bloodChargesCurrent:  state.bloodChargesCurrent,
-      comboDiceCurrent:     state.comboDiceCurrent,
-      furyChargesCurrent:   state.furyChargesCurrent,
-      skeletonChargesCurrent: state.skeletonChargesCurrent,
-      soulFragmentsCurrent: state.soulFragmentsCurrent,
-      battlemageFuryCurrent: state.battlemageFuryCurrent,
+      deathSuccesses:           state.deathSuccesses,
+      deathFails:               state.deathFails,
+      pylCharges:               state.pylCharges,
+      vitalHP:                  state.vitalHP,
+      vitalTempHP:              state.vitalTempHP,
+      vitalStamina:             state.vitalStamina,
+      multiclasses:             state.multiclasses,
+      mainClassLevel:           state.mainClassLevel,
+      chiCurrent:               state.chiCurrent,
+      strandsCurrent:           state.strandsCurrent,
+      bloodChargesCurrent:      state.bloodChargesCurrent,
+      bloodChargesMax:          state.bloodChargesMax,
+      comboDiceCurrent:         state.comboDiceCurrent,
+      furyChargesCurrent:       state.furyChargesCurrent,
+      ordersChargesCurrent:     state.ordersChargesCurrent,
+      druidAPCurrent:           state.druidAPCurrent,
+      skeletonChargesCurrent:   state.skeletonChargesCurrent,
+      soulFragmentsCurrent:     state.soulFragmentsCurrent,
+      battlemageFuryCurrent:    state.battlemageFuryCurrent,
+      ssSelectedMastery:        ssSelectedMastery,
+      ssSelectedUtility:        ssSelectedUtility,
+      ssCharges:                ssCharges,
     },
-    // Capture all form field values
     fields: collectFormValues(),
-    // Capture theme
     theme: document.documentElement.getAttribute('data-theme') || '',
     portraitDataUrl: state._portraitDataUrl || null,
   };
+}
 
+function applyLoadData(data) {
+  if (!data || !data.state || !data.fields) throw new Error('Invalid save file format.');
+
+  const s = data.state;
+
+  // ── Restore state object ──────────────────────────────────────────────────
+  if (s.baseStats)            Object.assign(state.baseStats, s.baseStats);
+  if (s.skillPM)              Object.assign(state.skillPM, s.skillPM);
+  if (s.skillPointHistory)    state.skillPointHistory = s.skillPointHistory;
+  if (s.lockedLevels)         state.lockedLevels = new Set(s.lockedLevels);
+  if (s.gearRows)             state.gearRows = s.gearRows;
+  if (s.gearStats)            Object.assign(state.gearStats, s.gearStats);
+  if (s.professions)          state.professions = s.professions;
+  if (s.buffStatTotals)       Object.assign(state.buffStatTotals, s.buffStatTotals);
+  if (s.inventoryGearModBufStats) Object.assign(state.inventoryGearModBufStats, s.inventoryGearModBufStats);
+  if (s.deathSuccesses)       state.deathSuccesses = s.deathSuccesses;
+  if (s.deathFails)           state.deathFails = s.deathFails;
+  if (s.pylCharges)           state.pylCharges = s.pylCharges;
+  const numFields = ['vitalHP','vitalTempHP','vitalStamina','mainClassLevel',
+    'chiCurrent','strandsCurrent','bloodChargesCurrent','bloodChargesMax',
+    'comboDiceCurrent','furyChargesCurrent','ordersChargesCurrent','druidAPCurrent',
+    'skeletonChargesCurrent','soulFragmentsCurrent','battlemageFuryCurrent'];
+  numFields.forEach(k => { if (s[k] !== undefined) state[k] = s[k]; });
+  if (s.multiclasses)         state.multiclasses = s.multiclasses;
+  if (s.ssSelectedMastery !== undefined) ssSelectedMastery = s.ssSelectedMastery;
+  if (s.ssSelectedUtility !== undefined) ssSelectedUtility = s.ssSelectedUtility;
+  if (s.ssCharges !== undefined)         ssCharges = s.ssCharges;
+
+  // ── Restore theme + portrait ──────────────────────────────────────────────
+  if (data.portraitDataUrl) { state._portraitDataUrl = data.portraitDataUrl; restorePortrait(data.portraitDataUrl); }
+  if (data.theme) {
+    document.documentElement.setAttribute('data-theme', data.theme);
+    const sel = document.getElementById('theme-select');
+    if (sel) sel.value = data.theme;
+  }
+
+  // ── Rebuild ALL dynamic tables first (creates DOM elements) ───────────────
+  buildEquipTable();
+  buildSkillTables();
+  buildAbuffTable();
+  rebuildProfTable();
+  buildAilmentGrid();
+  buildResistGrid();
+  buildShapeshiftTables();
+
+  // ── Restore form fields (after tables exist in DOM) ───────────────────────
+  const fields = data.fields;
+
+  // First pass: set all field values
+  Object.entries(fields).forEach(([id, val]) => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    if (el.type === 'checkbox') el.checked = val;
+    else el.value = val;
+  });
+
+  // Second pass: fire critical change handlers in dependency order
+  // Race must fire first (populates subrace dropdown)
+  const raceEl = document.getElementById('sel-race');
+  if (raceEl && raceEl.value) {
+    onRaceChange();
+    // After race populates subrace, restore subrace value
+    const subEl = document.getElementById('sel-subrace');
+    if (subEl && fields['sel-subrace']) subEl.value = fields['sel-subrace'];
+  }
+
+  // Class must fire (populates spec dropdown, sets resource label, hit die etc)
+  const classEl = document.getElementById('sel-class');
+  if (classEl && classEl.value) {
+    // updateSpecDropdown is called inside recalc - just ensure value is set
+  }
+
+  // Theme
+  if (data.theme) {
+    applyTheme(data.theme);
+    const thSel = document.getElementById('theme-select');
+    if (thSel) thSel.value = data.theme;
+  }
+
+  // ── Restore pip visuals ───────────────────────────────────────────────────
+  state.deathSuccesses.forEach((v, i) => {
+    const el = document.getElementById('ds' + i);
+    if (el) el.classList.toggle('filled', v);
+  });
+  state.deathFails.forEach((v, i) => {
+    const el = document.getElementById('df' + i);
+    if (el) el.classList.toggle('filled', v);
+  });
+  syncMortalityToDeathFails();
+
+  state.pylCharges.forEach((v, i) => {
+    const el = document.getElementById('pyl-' + i);
+    if (el) el.textContent = v ? '●' : '○';
+  });
+
+  // ── Restore vitals displays ───────────────────────────────────────────────
+  const hpEl  = document.getElementById('disp-hp');
+  const tmpEl = document.getElementById('disp-temphp');
+  const stEl  = document.getElementById('disp-stamina');
+  if (hpEl)  hpEl.textContent  = state.vitalHP || 0;
+  if (tmpEl) tmpEl.textContent = state.vitalTempHP || 0;
+  if (stEl)  {
+    stEl.textContent = state.vitalStamina || 0;
+    // Restore resource color
+    const cls = document.getElementById('sel-class')?.value || '';
+    const cd  = CLASS_DATA[cls];
+    if (cd) {
+      const r = (cd.resource || '').toLowerCase();
+      stEl.style.color = r === 'mana' ? '#6090ff' : r === 'rage' ? 'var(--red)' : 'var(--text)';
+    }
+  }
+
+  // ── Restore shapeshift state ──────────────────────────────────────────────
+  const ssCh = document.getElementById('ss-charges');
+  if (ssCh) ssCh.textContent = ssCharges;
+
+  // ── Skill PM inputs ───────────────────────────────────────────────────────
+  SKILL_DEFS.forEach(s => {
+    const id2 = s.name.replace(/\s+/g, '-');
+    const inp = document.getElementById('skill-pm-' + id2);
+    if (inp) inp.value = state.skillPM[s.name] || 0;
+  });
+
+  // ── Full recalc ───────────────────────────────────────────────────────────
+  recalc();
+  initCollapsibleCards();
+}
+
+function saveCharacter() {
+  const charName = document.getElementById('inp-charname')?.value || 'character';
+  const saveData = buildSaveData();
   const blob = new Blob([JSON.stringify(saveData, null, 2)], { type: 'application/json' });
   const url  = URL.createObjectURL(blob);
   const a    = document.createElement('a');
@@ -5485,8 +5744,8 @@ function saveCharacter() {
   document.body.appendChild(a); a.click();
   document.body.removeChild(a);
   URL.revokeObjectURL(url);
-
-  showSaveBanner('✓ Character saved as ' + filename);
+  autoSaveToLocalStorage();
+  showSaveBanner('✓ Saved as ' + filename);
 }
 
 function loadCharacter(event) {
@@ -5496,88 +5755,77 @@ function loadCharacter(event) {
   reader.onload = function(e) {
     try {
       const data = JSON.parse(e.target.result);
-      if (!data.state || !data.fields) throw new Error('Invalid save file format.');
-
-      // Restore state
-      const s = data.state;
-      if (s.baseStats)            Object.assign(state.baseStats, s.baseStats);
-      if (s.skillPM)              Object.assign(state.skillPM, s.skillPM);
-      if (s.skillPointHistory)    state.skillPointHistory = s.skillPointHistory;
-      if (s.lockedLevels)         state.lockedLevels = new Set(s.lockedLevels);
-      if (s.gearStats)            Object.assign(state.gearStats, s.gearStats);
-      if (s.gearRows)             state.gearRows = s.gearRows;
-      if (s.professions)          state.professions = s.professions;
-      if (s.buffStatTotals)       state.buffStatTotals = s.buffStatTotals;
-      if (s.inventoryGearModBufStats) Object.assign(state.inventoryGearModBufStats, s.inventoryGearModBufStats);
-      if (s.deathSuccesses)       state.deathSuccesses = s.deathSuccesses;
-      if (s.deathFails)           state.deathFails = s.deathFails;
-      if (s.pylCharges)           state.pylCharges = s.pylCharges;
-      if (s.vitalHP   !== undefined) state.vitalHP   = s.vitalHP;
-      if (s.vitalTempHP !== undefined) state.vitalTempHP = s.vitalTempHP;
-      if (s.vitalStamina !== undefined) state.vitalStamina = s.vitalStamina;
-      if (s.multiclasses)         state.multiclasses = s.multiclasses;
-      if (s.mainClassLevel !== undefined) state.mainClassLevel = s.mainClassLevel;
-      if (s.chiCurrent !== undefined)         state.chiCurrent = s.chiCurrent;
-      if (s.strandsCurrent !== undefined)     state.strandsCurrent = s.strandsCurrent;
-      if (s.bloodChargesCurrent !== undefined) state.bloodChargesCurrent = s.bloodChargesCurrent;
-      if (s.comboDiceCurrent !== undefined)   state.comboDiceCurrent = s.comboDiceCurrent;
-      if (s.furyChargesCurrent !== undefined) state.furyChargesCurrent = s.furyChargesCurrent;
-      if (s.skeletonChargesCurrent !== undefined) state.skeletonChargesCurrent = s.skeletonChargesCurrent;
-      if (s.soulFragmentsCurrent !== undefined) state.soulFragmentsCurrent = s.soulFragmentsCurrent;
-      if (s.battlemageFuryCurrent !== undefined) state.battlemageFuryCurrent = s.battlemageFuryCurrent;
-
-      // Restore theme
-      if (data.portraitDataUrl) { state._portraitDataUrl = data.portraitDataUrl; restorePortrait(data.portraitDataUrl); }
-      if (data.theme !== undefined) {
-        document.documentElement.setAttribute('data-theme', data.theme);
-        const sel = document.getElementById('theme-select');
-        if (sel) sel.value = data.theme;
-      }
-
-      // Restore all form fields
-      const fields = data.fields;
-      Object.entries(fields).forEach(([id, val]) => {
-        const el = document.getElementById(id);
-        if (!el) return;
-        if (el.type === 'checkbox') el.checked = val;
-        else el.value = val;
-      });
-
-      // Rebuild dynamic tables (gear, skills, professions, ability buffs)
-      buildEquipTable();
-      buildSkillTables();
-      buildAbuffTable();
-      rebuildProfTable();
-      buildAilmentGrid();
-      buildResistGrid();
-
-      // Restore death pip visual states
-      state.deathSuccesses.forEach((v, i) => {
-        const el = document.getElementById('ds' + i);
-        if (el) el.classList.toggle('filled', v);
-      });
-      state.deathFails.forEach((v, i) => {
-        const el = document.getElementById('df' + i);
-        if (el) el.classList.toggle('filled', v);
-      });
-      syncMortalityToDeathFails();
-
-      // Restore PYL pips
-      state.pylCharges.forEach((v, i) => {
-        const el = document.getElementById('pyl-' + i);
-        if (el) el.textContent = v ? '●' : '○';
-      });
-
-      recalc();
-      initCollapsibleCards();
+      applyLoadData(data);
+      autoSaveToLocalStorage();
       showSaveBanner('✓ Character loaded successfully!');
     } catch(err) {
-      alert('Failed to load save file: ' + err.message);
+      alert('Failed to load save file: ' + err.message + '\n\nCheck the browser console for details.');
+      console.error('Load error:', err);
     }
-    event.target.value = ''; // reset file input
+    event.target.value = '';
   };
   reader.readAsText(file);
 }
+
+// ── AUTO-SAVE to localStorage ─────────────────────────────────────────────────
+const LS_KEY = 'lov_character_autosave';
+let autoSaveTimer = null;
+
+function autoSaveToLocalStorage() {
+  try {
+    const data = buildSaveData();
+    // Portrait can be large — store separately to avoid quota issues
+    const portrait = data.portraitDataUrl;
+    data.portraitDataUrl = null;
+    localStorage.setItem(LS_KEY, JSON.stringify(data));
+    if (portrait) localStorage.setItem(LS_KEY + '_portrait', portrait);
+    else localStorage.removeItem(LS_KEY + '_portrait');
+    updateAutoSaveIndicator();
+  } catch(e) {
+    console.warn('Auto-save failed:', e);
+  }
+}
+
+function scheduleAutoSave() {
+  clearTimeout(autoSaveTimer);
+  autoSaveTimer = setTimeout(autoSaveToLocalStorage, 1200);
+}
+
+function loadFromLocalStorage() {
+  try {
+    const raw = localStorage.getItem(LS_KEY);
+    if (!raw) return false;
+    const data = JSON.parse(raw);
+    const portrait = localStorage.getItem(LS_KEY + '_portrait');
+    if (portrait) data.portraitDataUrl = portrait;
+    applyLoadData(data);
+    updateAutoSaveIndicator();
+    return true;
+  } catch(e) {
+    console.warn('Auto-load failed:', e);
+    return false;
+  }
+}
+
+function updateAutoSaveIndicator() {
+  const el = document.getElementById('autosave-indicator');
+  if (!el) return;
+  const d = new Date();
+  const t = d.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'});
+  el.textContent = '💾 Auto-saved ' + t;
+  el.style.opacity = '1';
+  clearTimeout(el._fadeTimer);
+  el._fadeTimer = setTimeout(() => { el.style.opacity = '0.4'; }, 3000);
+}
+
+function clearAutoSave() {
+  if (confirm('Clear auto-saved character data? This cannot be undone.')) {
+    localStorage.removeItem(LS_KEY);
+    localStorage.removeItem(LS_KEY + '_portrait');
+    showSaveBanner('Auto-save cleared.');
+  }
+}
+
 
 function showSaveBanner(msg) {
   let banner = document.getElementById('save-banner');
@@ -5853,6 +6101,246 @@ function confirmFullRest() {
 init();
 // Run after DOM is ready
 initCollapsibleCards();
+
+// ══════════════════════════════════════════════════════════════════
+// SUPABASE CONFIG — REPLACE THESE WITH YOUR PROJECT VALUES
+// ══════════════════════════════════════════════════════════════════
+const SUPABASE_URL  = https://keqqhulovivmpdooiitl.supabase.co;   // e.g. https://xxxx.supabase.co
+const SUPABASE_ANON = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtlcXFodWxvdml2bXBkb29paXRsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzgxMTAxODksImV4cCI6MjA5MzY4NjE4OX0.Pys9KV2SeOYrCjNOjgvl9RHBDRPI_NSy8G4XHkTlWpY;  // starts with eyJ...
+// ══════════════════════════════════════════════════════════════════
+
+const SUPABASE_CONFIGURED = SUPABASE_URL !== 'YOUR_SUPABASE_URL';
+let supabase = null;
+let currentUser = null;
+let currentCharId = null;
+let cloudSaveTimer = null;
+
+// Boot: init Supabase or show config warning
+(async function bootAuth() {
+  if (!SUPABASE_CONFIGURED) {
+    document.getElementById('auth-config-warning').style.display = 'block';
+    document.getElementById('auth-submit-btn').style.display = 'none';
+    document.querySelectorAll('.auth-tab-btn').forEach(b => b.style.display = 'none');
+    return;
+  }
+  supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
+  // Check for existing session
+  const { data: { session } } = await supabase.auth.getSession();
+  if (session) {
+    currentUser = session.user;
+    showCharSelect();
+  } else {
+    // Show auth overlay
+    document.getElementById('auth-overlay').style.display = 'flex';
+  }
+})();
+
+// ── AUTH UI helpers ───────────────────────────────────────────────────────────
+let authMode = 'login';
+
+function switchAuthTab(mode) {
+  authMode = mode;
+  const isReg = mode === 'register';
+  document.getElementById('auth-tab-login').style.background    = isReg ? 'transparent' : 'rgba(61,204,199,.15)';
+  document.getElementById('auth-tab-login').style.color         = isReg ? 'rgba(255,255,255,.4)' : '#3dccca';
+  document.getElementById('auth-tab-register').style.background = isReg ? 'rgba(61,204,199,.15)' : 'transparent';
+  document.getElementById('auth-tab-register').style.color      = isReg ? '#3dccca' : 'rgba(255,255,255,.4)';
+  document.getElementById('auth-name-field').style.display      = isReg ? '' : 'none';
+  document.getElementById('auth-submit-btn').textContent        = isReg ? 'CREATE ACCOUNT' : 'SIGN IN';
+  showAuthMsg('', '');
+}
+
+function showAuthMsg(msg, type) {
+  const el = document.getElementById('auth-message');
+  if (!msg) { el.style.display = 'none'; return; }
+  el.style.display = 'block';
+  el.style.background = type === 'error' ? 'rgba(224,85,85,.12)' : 'rgba(61,204,199,.1)';
+  el.style.color      = type === 'error' ? '#e05555' : '#3dccca';
+  el.style.border     = type === 'error' ? '1px solid rgba(224,85,85,.2)' : '1px solid rgba(61,204,199,.2)';
+  el.textContent = msg;
+}
+
+async function handleAuthSubmit() {
+  const email    = document.getElementById('auth-email').value.trim();
+  const password = document.getElementById('auth-password').value;
+  const name     = document.getElementById('auth-displayname').value.trim();
+  const btn      = document.getElementById('auth-submit-btn');
+
+  if (!email || !password) { showAuthMsg('Please fill in all fields.', 'error'); return; }
+  if (authMode === 'register' && !name) { showAuthMsg('Please enter a display name.', 'error'); return; }
+
+  btn.textContent = '...'; btn.disabled = true;
+
+  if (authMode === 'register') {
+    const { data, error } = await supabase.auth.signUp({
+      email, password,
+      options: { data: { display_name: name } }
+    });
+    if (error) { showAuthMsg(error.message, 'error'); btn.textContent = 'CREATE ACCOUNT'; btn.disabled = false; return; }
+    showAuthMsg('Account created! Check your email to confirm, then sign in.', 'success');
+    switchAuthTab('login');
+  } else {
+    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+    if (error) { showAuthMsg(error.message, 'error'); btn.textContent = 'SIGN IN'; btn.disabled = false; return; }
+    currentUser = data.user;
+    document.getElementById('auth-overlay').style.display = 'none';
+    showCharSelect();
+  }
+  btn.disabled = false;
+}
+
+function skipAuth() {
+  document.getElementById('auth-overlay').style.display = 'none';
+  // Auto-load local save
+  if (localStorage.getItem('lov_character_autosave')) {
+    try { loadFromLocalStorage(); showSaveBanner('✓ Auto-loaded local session'); } catch(e) {}
+  }
+}
+
+async function signOut() {
+  if (supabase) await supabase.auth.signOut();
+  currentUser = null; currentCharId = null;
+  document.getElementById('char-select-overlay').style.display = 'none';
+  document.getElementById('cloud-save-btn').style.display = 'none';
+  document.getElementById('char-list-btn').style.display = 'none';
+  document.getElementById('auth-overlay').style.display = 'flex';
+  showAuthMsg('', '');
+  document.getElementById('auth-email').value = '';
+  document.getElementById('auth-password').value = '';
+}
+
+// ── CHARACTER SELECT ──────────────────────────────────────────────────────────
+async function showCharSelect() {
+  document.getElementById('char-select-overlay').style.display = 'block';
+  const nameEl = document.getElementById('char-select-user');
+  if (currentUser) {
+    const dn = currentUser.user_metadata?.display_name || currentUser.email;
+    nameEl.textContent = '👤 ' + dn;
+  }
+  await loadCharacterList();
+}
+
+async function loadCharacterList() {
+  if (!supabase || !currentUser) return;
+  const { data: chars, error } = await supabase
+    .from('characters')
+    .select('id, name, class, level, updated_at')
+    .eq('user_id', currentUser.id)
+    .order('updated_at', { ascending: false });
+
+  const grid = document.getElementById('char-grid');
+  grid.innerHTML = '';
+
+  if (error) { grid.innerHTML = '<p style="color:#e05555">Error loading characters: ' + error.message + '</p>'; return; }
+  if (!chars || chars.length === 0) {
+    grid.innerHTML = '<p style="color:rgba(255,255,255,.3);font-size:14px;">No characters yet. Create your first one below!</p>';
+    return;
+  }
+
+  chars.forEach(ch => {
+    const card = document.createElement('div');
+    card.style.cssText = `background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);
+      border-radius:12px;padding:20px;cursor:pointer;transition:all .2s;position:relative;`;
+    card.onmouseenter = () => { card.style.borderColor = 'rgba(61,204,199,.4)'; card.style.background = 'rgba(61,204,199,.06)'; };
+    card.onmouseleave = () => { card.style.borderColor = 'rgba(255,255,255,.08)'; card.style.background = 'rgba(255,255,255,.04)'; };
+    const updated = new Date(ch.updated_at).toLocaleDateString();
+    card.innerHTML = `
+      <div style="font-size:16px;font-weight:700;color:#fff;margin-bottom:6px;">${ch.name || 'Unnamed'}</div>
+      <div style="font-size:12px;color:rgba(61,204,199,.7);margin-bottom:4px;">${ch.class || '—'} · Level ${ch.level || 1}</div>
+      <div style="font-size:11px;color:rgba(255,255,255,.25);">Updated ${updated}</div>
+      <button onclick="event.stopPropagation();deleteCharacter('${ch.id}')"
+        style="position:absolute;top:10px;right:10px;background:transparent;border:none;
+               color:rgba(255,255,255,.2);cursor:pointer;font-size:14px;padding:2px 6px;"
+        title="Delete character">✕</button>`;
+    card.onclick = () => loadCloudCharacter(ch.id);
+    grid.appendChild(card);
+  });
+}
+
+async function createNewCharacter() {
+  if (!supabase || !currentUser) {
+    // No auth — just close the overlay and start fresh
+    document.getElementById('char-select-overlay').style.display = 'none';
+    return;
+  }
+  const { data, error } = await supabase
+    .from('characters')
+    .insert({ user_id: currentUser.id, name: 'New Character', data: buildSaveData() })
+    .select('id')
+    .single();
+  if (error) { alert('Error creating character: ' + error.message); return; }
+  currentCharId = data.id;
+  document.getElementById('char-select-overlay').style.display = 'none';
+  document.getElementById('cloud-save-btn').style.display = '';
+  document.getElementById('char-list-btn').style.display = '';
+  // Fresh sheet
+  init(); initCollapsibleCards(); recalc();
+  showSaveBanner('✓ New character created');
+}
+
+async function loadCloudCharacter(id) {
+  if (!supabase) return;
+  const { data, error } = await supabase
+    .from('characters')
+    .select('id, data')
+    .eq('id', id)
+    .single();
+  if (error) { alert('Error loading character: ' + error.message); return; }
+  currentCharId = id;
+  document.getElementById('char-select-overlay').style.display = 'none';
+  document.getElementById('cloud-save-btn').style.display = '';
+  document.getElementById('char-list-btn').style.display = '';
+  try {
+    applyLoadData(data.data);
+    showSaveBanner('✓ Character loaded from cloud');
+  } catch(e) {
+    alert('Error restoring character data: ' + e.message);
+  }
+}
+
+async function deleteCharacter(id) {
+  if (!confirm('Delete this character? This cannot be undone.')) return;
+  const { error } = await supabase.from('characters').delete().eq('id', id);
+  if (error) { alert('Error: ' + error.message); return; }
+  await loadCharacterList();
+}
+
+// ── CLOUD SAVE ────────────────────────────────────────────────────────────────
+async function cloudSaveCharacter() {
+  if (!supabase || !currentUser || !currentCharId) return;
+  const saveData = buildSaveData();
+  const charName = document.getElementById('char-name-input')?.value || 'Character';
+  const cls      = document.getElementById('sel-class')?.value || '';
+  const xp       = parseInt(document.getElementById('inp-xp')?.value) || 0;
+  const level    = getLevel(xp);
+
+  const { error } = await supabase
+    .from('characters')
+    .update({
+      name: charName,
+      class: cls,
+      level: level,
+      data: saveData,
+      updated_at: new Date().toISOString()
+    })
+    .eq('id', currentCharId);
+
+  if (error) {
+    console.error('Cloud save error:', error);
+    showSaveBanner('✗ Cloud save failed: ' + error.message);
+  } else {
+    showSaveBanner('☁ Saved to cloud');
+    // Also persist locally
+    autoSaveToLocalStorage();
+  }
+}
+
+function scheduleCloudSave() {
+  clearTimeout(cloudSaveTimer);
+  cloudSaveTimer = setTimeout(() => {
+    cloudSaveCharacter();
+  }, 2000);
+}
 </script>
 
 <!-- ═══════════════════════════════ REST MODAL ══════════════════════════════ -->
