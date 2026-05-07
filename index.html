@@ -4,7 +4,7 @@
 <head>
 <meta charset="UTF-8">
   <!-- Supabase SDK -->
-  <script src="https://cdn.jsdelivr.net/npm/@supabaseClient/supabaseClient-js@2"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Legends of the Vanguard — Character Sheet</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -1736,12 +1736,13 @@ select option { background: var(--bg3); }
 </div><!-- /app -->
 
 <script>
-// Global vars hoisted to avoid temporal dead zone
+/* === GLOBALS (must be first to avoid temporal dead zone) === */
 let supabaseClient = null;
 let currentUser    = null;
 let currentCharId  = null;
-let cloudSaveTimer = null;
 let authMode       = 'login';
+/* =========================================================== */
+
 const COMBAT_FORMS = [
   { name:'Ursine Form',    atk:'BRW', bonuses:'+1 BRW / +1 Armor',                           desc:'Transforms into a bear of varying size. Tank/tough combat form. Soaks up damage while being no slouch at dealing it.' },
   { name:'Ape Form',       atk:'BRW', bonuses:'+1 BRW / Climbing 30 ft',                     desc:'Transforms into an ape. All-around form — absorbs and deals damage while being versatile, if not the best at any one task.' },
@@ -6110,15 +6111,11 @@ initCollapsibleCards();
 // ══════════════════════════════════════════════════════════════════
 // SUPABASE CONFIG — REPLACE THESE WITH YOUR PROJECT VALUES
 // ══════════════════════════════════════════════════════════════════
-const SUPABASE_URL  = 'https://keqqhulovivmpdooiitl.supabase.co';   // e.g. https://xxxx.supabase.co
+const SUPABASE_URL  = 'https://keqqhulovivmpdooiitl.supabase.co';
 const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtlcXFodWxvdml2bXBkb29paXRsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzgxMTAxODksImV4cCI6MjA5MzY4NjE4OX0.Pys9KV2SeOYrCjNOjgvl9RHBDRPI_NSy8G4XHkTlWpY';  // starts with eyJ...
 // ══════════════════════════════════════════════════════════════════
 
-const SUPABASE_CONFIGURED = SUPABASE_URL.startsWith('https://') && SUPABASE_URL.includes('.supabase.co');
-
-
-
-
+const SUPABASE_CONFIGURED = (typeof SUPABASE_URL === 'string' && SUPABASE_URL.startsWith('https://') && SUPABASE_URL.includes('.supabase.co'));
 
 // Boot: init Supabase or show config warning
 (async function bootAuth() {
@@ -6141,7 +6138,6 @@ const SUPABASE_CONFIGURED = SUPABASE_URL.startsWith('https://') && SUPABASE_URL.
 })();
 
 // ── AUTH UI helpers ───────────────────────────────────────────────────────────
-
 
 function switchAuthTab(mode) {
   authMode = mode;
@@ -6262,6 +6258,46 @@ async function loadCharacterList() {
   });
 }
 
+
+function resetStateToDefaults() {
+  Object.assign(state.baseStats, {BRW:10,AGI:10,PHY:10,INT:10,WILL:10,CHAR:10,LUCK:10});
+  Object.keys(state.skillPM).forEach(k => state.skillPM[k] = 0);
+  state.skillPointHistory = Array.from({length:20}, () => ({}));
+  state.lockedLevels = new Set();
+  state.gearRows = [];
+  Object.keys(state.gearStats).forEach(k => state.gearStats[k] = 0);
+  state.professions = [];
+  Object.keys(state.buffStatTotals).forEach(k => state.buffStatTotals[k] = 0);
+  Object.keys(state.inventoryGearModBufStats).forEach(k => state.inventoryGearModBufStats[k] = 0);
+  state.deathSuccesses = [false,false,false];
+  state.deathFails = [false,false,false];
+  state.pylCharges = [false,false];
+  state.vitalHP = 0; state.vitalTempHP = 0; state.vitalStamina = 0;
+  state.multiclasses = []; state.mainClassLevel = null;
+  state.chiCurrent = 0; state.strandsCurrent = 0;
+  state.bloodChargesCurrent = 0; state.bloodChargesMax = 2;
+  state.comboDiceCurrent = 0; state.furyChargesCurrent = 0;
+  state.ordersChargesCurrent = 0; state.druidAPCurrent = 0;
+  state.skeletonChargesCurrent = 0; state.soulFragmentsCurrent = 0;
+  state.battlemageFuryCurrent = 0; state._portraitDataUrl = null;
+  ssCharges = 2; ssSelectedMastery = null; ssSelectedUtility = null;
+  document.querySelectorAll('input[id]:not([type=radio]):not([type=file]),select[id],textarea[id]').forEach(el => {
+    if (el.type === 'checkbox') el.checked = false;
+    else if (el.tagName === 'SELECT') el.selectedIndex = 0;
+    else el.value = '';
+  });
+  const xpEl = document.getElementById('inp-xp'); if (xpEl) xpEl.value = '0';
+  buildEquipTable(); buildSkillTables(); buildAbuffTable();
+  rebuildProfTable(); buildAilmentGrid(); buildResistGrid();
+  removePortrait();
+  const hpEl = document.getElementById('disp-hp'); if (hpEl) hpEl.textContent = '0';
+  const tmpEl = document.getElementById('disp-temphp'); if (tmpEl) tmpEl.textContent = '0';
+  const stEl = document.getElementById('disp-stamina'); if (stEl) stEl.textContent = '0';
+  const cnEl = document.getElementById('char-name-input'); if (cnEl) cnEl.value = '';
+  recalc(); initCollapsibleCards();
+  localStorage.removeItem('lov_character_autosave');
+  localStorage.removeItem('lov_character_autosave_portrait');
+}
 async function createNewCharacter() {
   if (!supabaseClient || !currentUser) {
     // No auth — just close the overlay and start fresh
@@ -6278,8 +6314,7 @@ async function createNewCharacter() {
   document.getElementById('char-select-overlay').style.display = 'none';
   document.getElementById('cloud-save-btn').style.display = '';
   document.getElementById('char-list-btn').style.display = '';
-  // Fresh sheet
-  init(); initCollapsibleCards(); recalc();
+  resetStateToDefaults();
   showSaveBanner('✓ New character created');
 }
 
