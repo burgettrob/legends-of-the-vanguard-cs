@@ -4,7 +4,7 @@
 <head>
 <meta charset="UTF-8">
   <!-- Supabase SDK -->
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabaseClient/supabaseClient-js@2"></script>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Legends of the Vanguard — Character Sheet</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -1736,12 +1736,12 @@ select option { background: var(--bg3); }
 </div><!-- /app -->
 
 <script>
+// Global vars hoisted to avoid temporal dead zone
 let supabaseClient = null;
 let currentUser    = null;
 let currentCharId  = null;
 let cloudSaveTimer = null;
 let authMode       = 'login';
-
 const COMBAT_FORMS = [
   { name:'Ursine Form',    atk:'BRW', bonuses:'+1 BRW / +1 Armor',                           desc:'Transforms into a bear of varying size. Tank/tough combat form. Soaks up damage while being no slouch at dealing it.' },
   { name:'Ape Form',       atk:'BRW', bonuses:'+1 BRW / Climbing 30 ft',                     desc:'Transforms into an ape. All-around form — absorbs and deals damage while being versatile, if not the best at any one task.' },
@@ -4478,7 +4478,6 @@ function addXP() {
   document.getElementById('inp-xp').value = cur + add;
   document.getElementById('inp-addxp').value = '';
   updateExhaustionAilmentCard(0);
-  buildShapeshiftTables();
   recalc();
 }
 
@@ -5655,7 +5654,6 @@ function applyLoadData(data) {
   rebuildProfTable();
   buildAilmentGrid();
   buildResistGrid();
-  buildShapeshiftTables();
 
   // ── Restore form fields (after tables exist in DOM) ───────────────────────
   const fields = data.fields;
@@ -6120,6 +6118,8 @@ const SUPABASE_CONFIGURED = SUPABASE_URL.startsWith('https://') && SUPABASE_URL.
 
 
 
+
+
 // Boot: init Supabase or show config warning
 (async function bootAuth() {
   if (!SUPABASE_CONFIGURED) {
@@ -6128,9 +6128,9 @@ const SUPABASE_CONFIGURED = SUPABASE_URL.startsWith('https://') && SUPABASE_URL.
     document.querySelectorAll('.auth-tab-btn').forEach(b => b.style.display = 'none');
     return;
   }
-  supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
+  supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
   // Check for existing session
-  const { data: { session } } = await supabase.auth.getSession();
+  const { data: { session } } = await supabaseClient.auth.getSession();
   if (session) {
     currentUser = session.user;
     showCharSelect();
@@ -6177,7 +6177,7 @@ async function handleAuthSubmit() {
   btn.textContent = '...'; btn.disabled = true;
 
   if (authMode === 'register') {
-    const { data, error } = await supabase.auth.signUp({
+    const { data, error } = await supabaseClient.auth.signUp({
       email, password,
       options: { data: { display_name: name } }
     });
@@ -6185,7 +6185,7 @@ async function handleAuthSubmit() {
     showAuthMsg('Account created! Check your email to confirm, then sign in.', 'success');
     switchAuthTab('login');
   } else {
-    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+    const { data, error } = await supabaseClient.auth.signInWithPassword({ email, password });
     if (error) { showAuthMsg(error.message, 'error'); btn.textContent = 'SIGN IN'; btn.disabled = false; return; }
     currentUser = data.user;
     document.getElementById('auth-overlay').style.display = 'none';
@@ -6203,7 +6203,7 @@ function skipAuth() {
 }
 
 async function signOut() {
-  if (supabase) await supabase.auth.signOut();
+  if (supabaseClient) await supabaseClient.auth.signOut();
   currentUser = null; currentCharId = null;
   document.getElementById('char-select-overlay').style.display = 'none';
   document.getElementById('cloud-save-btn').style.display = 'none';
@@ -6226,8 +6226,8 @@ async function showCharSelect() {
 }
 
 async function loadCharacterList() {
-  if (!supabase || !currentUser) return;
-  const { data: chars, error } = await supabase
+  if (!supabaseClient || !currentUser) return;
+  const { data: chars, error } = await supabaseClient
     .from('characters')
     .select('id, name, class, level, updated_at')
     .eq('user_id', currentUser.id)
@@ -6263,12 +6263,12 @@ async function loadCharacterList() {
 }
 
 async function createNewCharacter() {
-  if (!supabase || !currentUser) {
+  if (!supabaseClient || !currentUser) {
     // No auth — just close the overlay and start fresh
     document.getElementById('char-select-overlay').style.display = 'none';
     return;
   }
-  const { data, error } = await supabase
+  const { data, error } = await supabaseClient
     .from('characters')
     .insert({ user_id: currentUser.id, name: 'New Character', data: buildSaveData() })
     .select('id')
@@ -6284,8 +6284,8 @@ async function createNewCharacter() {
 }
 
 async function loadCloudCharacter(id) {
-  if (!supabase) return;
-  const { data, error } = await supabase
+  if (!supabaseClient) return;
+  const { data, error } = await supabaseClient
     .from('characters')
     .select('id, data')
     .eq('id', id)
@@ -6305,21 +6305,21 @@ async function loadCloudCharacter(id) {
 
 async function deleteCharacter(id) {
   if (!confirm('Delete this character? This cannot be undone.')) return;
-  const { error } = await supabase.from('characters').delete().eq('id', id);
+  const { error } = await supabaseClient.from('characters').delete().eq('id', id);
   if (error) { alert('Error: ' + error.message); return; }
   await loadCharacterList();
 }
 
 // ── CLOUD SAVE ────────────────────────────────────────────────────────────────
 async function cloudSaveCharacter() {
-  if (!supabase || !currentUser || !currentCharId) return;
+  if (!supabaseClient || !currentUser || !currentCharId) return;
   const saveData = buildSaveData();
   const charName = document.getElementById('char-name-input')?.value || 'Character';
   const cls      = document.getElementById('sel-class')?.value || '';
   const xp       = parseInt(document.getElementById('inp-xp')?.value) || 0;
   const level    = getLevel(xp);
 
-  const { error } = await supabase
+  const { error } = await supabaseClient
     .from('characters')
     .update({
       name: charName,
