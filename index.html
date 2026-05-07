@@ -1735,7 +1735,14 @@ select option { background: var(--bg3); }
 
 </div><!-- /app -->
 
-<script>const COMBAT_FORMS = [
+<script>
+let supabaseClient = null;
+let currentUser    = null;
+let currentCharId  = null;
+let cloudSaveTimer = null;
+let authMode       = 'login';
+
+const COMBAT_FORMS = [
   { name:'Ursine Form',    atk:'BRW', bonuses:'+1 BRW / +1 Armor',                           desc:'Transforms into a bear of varying size. Tank/tough combat form. Soaks up damage while being no slouch at dealing it.' },
   { name:'Ape Form',       atk:'BRW', bonuses:'+1 BRW / Climbing 30 ft',                     desc:'Transforms into an ape. All-around form — absorbs and deals damage while being versatile, if not the best at any one task.' },
   { name:'Feline Form',    atk:'AGI', bonuses:'+1 AGI / +2 Stealth',                         desc:'Takes on a feline form — very agile, powerful, and stealthy. The DPS (high damage) form.' },
@@ -6109,11 +6116,9 @@ const SUPABASE_URL  = 'https://keqqhulovivmpdooiitl.supabase.co';   // e.g. http
 const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtlcXFodWxvdml2bXBkb29paXRsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzgxMTAxODksImV4cCI6MjA5MzY4NjE4OX0.Pys9KV2SeOYrCjNOjgvl9RHBDRPI_NSy8G4XHkTlWpY';  // starts with eyJ...
 // ══════════════════════════════════════════════════════════════════
 
-const SUPABASE_CONFIGURED = SUPABASE_URL !== 'https://keqqhulovivmpdooiitl.supabase.co';
-let supabase = null;
-let currentUser = null;
-let currentCharId = null;
-let cloudSaveTimer = null;
+const SUPABASE_CONFIGURED = SUPABASE_URL.startsWith('https://') && SUPABASE_URL.includes('.supabase.co');
+
+
 
 // Boot: init Supabase or show config warning
 (async function bootAuth() {
@@ -6136,7 +6141,7 @@ let cloudSaveTimer = null;
 })();
 
 // ── AUTH UI helpers ───────────────────────────────────────────────────────────
-let authMode = 'login';
+
 
 function switchAuthTab(mode) {
   authMode = mode;
