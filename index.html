@@ -860,14 +860,7 @@ select option { background: var(--bg3); }
 <div class="header">
   <div></div>
   <div>
-    <div style="display:flex;flex-direction:column;gap:2px;">
-      <div class="header-title">Legends of the Vanguard</div>
-      <input id="char-name-input" type="text" placeholder="Character Name..."
-        onchange="scheduleCloudSave()" oninput="scheduleCloudSave()"
-        style="background:transparent;border:none;border-bottom:1px solid rgba(255,255,255,.15);
-               color:rgba(255,255,255,.6);font-size:11px;letter-spacing:.06em;padding:2px 0;
-               font-family:var(--font-mono);width:200px;outline:none;">
-    </div>
+    <div class="header-title">Legends of the Vanguard</div>
   </div>
   <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;justify-content:flex-end;">
     <div style="display:flex;gap:4px;">
@@ -883,7 +876,6 @@ select option { background: var(--bg3); }
         style="display:none;padding:4px 12px;font-size:10px;letter-spacing:.05em;background:rgba(255,255,255,.05);
                border:1px solid rgba(255,255,255,.12);border-radius:4px;color:var(--text3);cursor:pointer;
                font-family:var(--font-mono);text-transform:uppercase;">⚔ Characters</button>
-      <span id="autosave-indicator" style="font-size:10px;color:var(--text3);font-family:var(--font-mono);opacity:0.4;transition:opacity .5s;white-space:nowrap;"></span>
       <button class="btn gold" onclick="saveCharacter()" title="Save character to file"
         style="padding:4px 12px;font-size:10px;letter-spacing:.05em;">💾 Save</button>
       <label class="btn" title="Load character from file"
@@ -925,7 +917,8 @@ select option { background: var(--bg3); }
   <button class="tab" onclick="showTab('spells')">Spells & Abilities</button>
   <button class="tab" onclick="showTab('buffs')">Buffs / Debuffs</button>
   <button class="tab" id="tab-btn-shapeshifting" onclick="showTab('shapeshifting')">Shapeshifting</button>
-  <button class="tab" onclick="showTab('companions')">Companions</button>
+  <button class="tab" id="tab-btn-companions" onclick="showTab('companions')">Companions</button>
+  <button class="tab" id="tab-btn-totems" onclick="showTab('totems')" style="display:none;">Totems</button>
   <button class="tab" onclick="showTab('ailments')">Ailments</button>
   <button class="tab" onclick="showTab('scaling')">Spell Scaling</button>
   <button class="tab" onclick="showTab('notes')">Campaign Notes</button>
@@ -948,7 +941,7 @@ select option { background: var(--bg3); }
         style="display:none;font-family:var(--font-head);font-size:22px;color:var(--gold);background:transparent;border:none;border-bottom:2px solid var(--gold);outline:none;width:100%;text-shadow:0 0 20px rgba(212,168,67,.3);"
         value="New Character"
         onblur="finishEditName()"
-        onkeydown="if(event.key==='Enter')this.blur()">
+        onkeydown="if(event.key==='Enter')this.blur()" onchange="scheduleCloudSave()" oninput="scheduleCloudSave()">
       <div class="char-subtitle" id="banner-sub">Select Class · Race · Background</div>
     </div>
     <div style="display:flex;gap:8px;align-items:center;">
@@ -1240,9 +1233,9 @@ select option { background: var(--bg3); }
           <div class="dot" style="background:var(--teal)"></div>Skills
           <div style="margin-left:auto;display:flex;align-items:center;gap:8px;">
             <span id="skill-lock-status" style="font-size:10px;font-family:var(--font-mono);color:var(--text3);display:none;">🔒 LOCKED</span>
-            <span style="font-size:10px;color:var(--text3);font-family:var(--font-mono);">LVL SKILL POINTS:</span>
+            <span style="font-size:10px;color:var(--text3);font-family:var(--font-mono);">SKILL POINTS REMAINING:</span>
             <span id="skill-pts-remaining" style="font-family:var(--font-mono);font-size:13px;font-weight:700;color:var(--teal);">3</span>
-            <span style="font-size:10px;color:var(--text3);font-family:var(--font-mono);">/ 3 remaining</span>
+            
             <button id="skill-lock-btn" class="btn gold" onclick="lockSkillPoints()"
               style="padding:4px 12px;font-size:10px;display:none;"
               title="Lock in skill point allocations for this level">🔒 Lock In Points</button>
@@ -1544,6 +1537,69 @@ select option { background: var(--bg3); }
   </div>
 </div>
 
+<!-- ═══════════════════════════════════════════ TOTEMS TAB ══════════════════════════════════════ -->
+<div id="tab-totems" class="panel">
+
+  <!-- Base totem picker (level 1, locked once chosen) -->
+  <div class="card" style="margin-bottom:12px;" id="totem-pick-card">
+    <div class="card-header"><div class="dot" style="background:var(--teal)"></div>Choose Your Totem — Locked for life</div>
+    <div class="card-body">
+      <p style="font-size:12px;color:var(--text3);margin-bottom:12px;">
+        Totems have 4 Defense, 1d4×Level HP. Lasts until destroyed or picked up. Can be slotted into a belt slot and cast as a bonus action once created.
+      </p>
+      <div id="totem-picker-options" style="display:flex;gap:10px;flex-wrap:wrap;"></div>
+      <div id="totem-locked-display" style="display:none;margin-top:8px;"></div>
+    </div>
+  </div>
+
+  <!-- Active Totems -->
+  <div class="card" style="margin-bottom:12px;">
+    <div class="card-header"><div class="dot" style="background:var(--teal)"></div>Active Totems</div>
+    <div class="card-body">
+      <div id="totem-slots"></div>
+    </div>
+  </div>
+
+  <!-- Totem Fusion (level 4+) -->
+  <div class="card" id="totem-fusion-card" style="display:none;margin-bottom:12px;">
+    <div class="card-header"><div class="dot" style="background:var(--gold)"></div>Totem Fusion (Level 4+)</div>
+    <div class="card-body">
+      <p style="font-size:13px;color:var(--text2);line-height:1.7;margin-bottom:14px;">
+        <strong style="color:var(--gold);">Totem Fusion</strong> — Twice per long rest, when you drop your second totem, as part of the same action, you may fuse your totems to gain increased effects for three rounds. The totem fusion will become a singular totem and will occupy one of the spaces of your existing totems (Shaman's choice), and it will have the combined health totals of both totems. Alternatively you may cast this as a bonus action. Refer to the Hybrid Totems table below to see effects.
+      </p>
+      <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+        <span style="font-size:10px;color:var(--text3);font-family:var(--font-mono);">CHARGES (resets on long rest):</span>
+        <button class="vital-adj-btn" onclick="adjustTotemFusion(-1)">−</button>
+        <span id="totem-fusion-charges" style="font-family:var(--font-mono);font-size:20px;font-weight:700;color:var(--gold);min-width:28px;text-align:center;">2</span>
+        <button class="vital-adj-btn" onclick="adjustTotemFusion(1)">+</button>
+        <span style="font-size:11px;color:var(--text3);font-family:var(--font-mono);">/ 2 max</span>
+        <button onclick="document.getElementById('totem-fusion-charges').textContent='2'"
+          style="margin-left:8px;padding:3px 10px;font-size:10px;background:var(--bg4);border:1px solid var(--border);border-radius:4px;color:var(--text3);cursor:pointer;font-family:var(--font-mono);">
+          Reset (Long Rest)
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Hybrid Totems Reference (level 4+) -->
+  <div class="card" id="totem-hybrid-card" style="display:none;">
+    <div class="card-header"><div class="dot" style="background:var(--purple)"></div>Hybrid Totems (Level 4+) — Require Empowered Totem</div>
+    <div class="card-body" style="padding:0;">
+      <table style="width:100%;border-collapse:collapse;font-size:12px;">
+        <thead>
+          <tr style="background:var(--bg3);color:var(--text3);font-size:10px;font-family:var(--font-mono);">
+            <th style="padding:8px 12px;text-align:left;">HYBRID TOTEM</th>
+            <th style="padding:8px 12px;text-align:center;width:50px;">MANA</th>
+            <th style="padding:8px 12px;text-align:left;">EFFECT</th>
+          </tr>
+        </thead>
+        <tbody id="totem-hybrid-tbody"></tbody>
+      </table>
+    </div>
+  </div>
+
+</div>
+
 <!-- ═══════════════════════════════════════════ COMPANIONS TAB ══════════════════════════════════ -->
 <div id="tab-companions" class="panel">
 
@@ -1740,6 +1796,7 @@ select option { background: var(--bg3); }
 let supabaseClient = null;
 let currentUser    = null;
 let currentCharId  = null;
+let cloudSaveTimer = null;
 let authMode       = 'login';
 /* =========================================================== */
 
@@ -1773,18 +1830,20 @@ const UTILITY_FORMS = [
 // ════════════════════════════════════════════════════════════════
 
 // Multiclass stat requirements (base score of 14 needed)
+// Single-stat requirements need >= 18
+// Dual-stat requirements (Paladin, Shaman) need >= 16 in BOTH stats
 const MULTICLASS_REQS = {
-  'Archer':   'AGI',
-  'Cleric':   'CHAR',
-  'Druid':    'WILL',
-  'Pugilist': 'AGI',
-  'Mage':     'INT',
-  'Paladin':  'CHAR',
-  'Rogue':    'AGI',
-  'Shaman':   'WILL',
-  'Sorcerer': 'INT',
-  'Warlord':  'BRW',
-  'Warrior':  'BRW',
+  'Archer':   { stats:['AGI'],        threshold:18 },
+  'Cleric':   { stats:['CHAR'],       threshold:18 },
+  'Druid':    { stats:['WILL'],       threshold:18 },
+  'Pugilist': { stats:['AGI'],        threshold:18 },
+  'Mage':     { stats:['INT'],        threshold:18 },
+  'Paladin':  { stats:['BRW','CHAR'], threshold:16 },
+  'Rogue':    { stats:['AGI'],        threshold:18 },
+  'Shaman':   { stats:['BRW','WILL'], threshold:16 },
+  'Sorcerer': { stats:['INT'],        threshold:18 },
+  'Warlord':  { stats:['BRW'],        threshold:18 },
+  'Warrior':  { stats:['BRW'],        threshold:18 },
 };
 
 const CLASS_DATA = {
@@ -2513,6 +2572,7 @@ let state = {
   inventoryGearBufStats: { BRW:0, AGI:0, PHY:0, INT:0, WILL:0, CHAR:0, LUCK:0 },
   buffStatTotals: {},
   gearStats: { wt:0, def:0, armor:0, marmor:0, sr:0, cr:0, spd:0, crit:0, init:0, stealth:0, BRW:0, AGI:0, PHY:0, INT:0, WILL:0, CHAR:0, LUCK:0, dmg:0, rng:0 },
+  shapeshiftBonuses: {},  // active when in a form
   trainingLevel: 0,  // current weapon/magic training level (0-6)
   inventoryGearModBufStats: { BRW:0, AGI:0, PHY:0, INT:0, WILL:0, CHAR:0, LUCK:0 },
 };
@@ -2588,7 +2648,8 @@ function getBuffedScore(attr) {
     bonus += (SUBRACE_DATA[subrace].stats?.[attr] || 0);
   }
   // Gear buff: auto-populated from equipped gear ability columns (read-only display)
-  const gearAttrBuff = (state.gearStats && state.gearStats[attr]) ? state.gearStats[attr] : 0;
+  const gearAttrBuff = ((state.gearStats && state.gearStats[attr]) ? state.gearStats[attr] : 0)
+                      + ((state.shapeshiftBonuses && state.shapeshiftBonuses[attr]) ? state.shapeshiftBonuses[attr] : 0);
   // Ability Score Buff: manually entered random/other buffs
   const scoreBuffEl = document.getElementById('abuff-score-' + attr);
   const scoreBuff = scoreBuffEl ? (parseInt(scoreBuffEl.value) || 0) : 0;
@@ -2626,7 +2687,8 @@ function calcSkillBonus(skillName, attr) {
   const raceBonus = (RACE_SKILL_BONUS[race] && RACE_SKILL_BONUS[race][skillName]) ? RACE_SKILL_BONUS[race][skillName] : 0;
   // Gear skill bonus from equipped gear skill columns
   const gearSkillKey = 'skill_' + skillName.replace(/ /g, '_');
-  const gearSkillBonus = (state.gearStats && state.gearStats[gearSkillKey]) ? state.gearStats[gearSkillKey] : 0;
+  const gearSkillBonus = ((state.gearStats && state.gearStats[gearSkillKey]) ? state.gearStats[gearSkillKey] : 0)
+                        + ((state.shapeshiftBonuses && state.shapeshiftBonuses[gearSkillKey]) ? state.shapeshiftBonuses[gearSkillKey] : 0);
   const stealthGearBonus = skillName === 'Stealth' ? ((state.gearStats && state.gearStats.stealth ? state.gearStats.stealth : 0) + (state.buffStatTotals && state.buffStatTotals['stealth'] ? state.buffStatTotals['stealth'] : 0)) : 0;
   // Ability mod can push skill negative but cannot push it positive on its own
   // All other bonuses (pm, bg, spec, subrace, race, gear) can make it positive
@@ -2721,9 +2783,11 @@ function recalc() {
   document.getElementById('disp-crit').textContent = (5 + (luckModNum * 3) + gearCrit + subraceCritBonus + specCrit) + '%';
 
   // Defense = 4 + gear
-  const gearDef = (state.gearStats && state.gearStats.def) ? state.gearStats.def : 0;
+  const gearDef = ((state.gearStats && state.gearStats.def) ? state.gearStats.def : 0)
+                + ((state.shapeshiftBonuses && state.shapeshiftBonuses.def) ? state.shapeshiftBonuses.def : 0);
   const buffDef = (state.buffStatTotals && state.buffStatTotals['def'] ? state.buffStatTotals['def'] : 0);
   document.getElementById('disp-defense').textContent = 4 + gearDef + buffDef;
+  const ssArmor = (state.shapeshiftBonuses?.armor) || 0;
   const gearArmor = (state.gearStats && state.gearStats.armor) ? state.gearStats.armor : 0;
   const buffArmor = (state.buffStatTotals && state.buffStatTotals['armor'] ? state.buffStatTotals['armor'] : 0);
   document.getElementById('disp-armor').textContent = subraceArmorBonus + gearArmor + buffArmor;
@@ -2748,6 +2812,7 @@ function recalc() {
   // Initiative = AGI modifier + LUCK modifier + gear bonus + subrace penalty
   const agiMod = getModifier('AGI');
   const agiModNum = agiMod;
+  const ssInit   = (state.shapeshiftBonuses?.init) || 0;
   const gearInit = ((state.gearStats && state.gearStats.init) ? state.gearStats.init : 0) + (state.buffStatTotals && state.buffStatTotals['init'] ? state.buffStatTotals['init'] : 0);
   const init = agiModNum + luckModNum + gearInit + subraceInitPenalty;
   document.getElementById('disp-init').textContent = (init >= 0 ? '+' : '') + init;
@@ -2893,8 +2958,17 @@ function recalc() {
   updateMCResourceVital();
   // Refresh shapeshifting tab
   updateShapeshiftTab(cls, spec);
-  // Schedule auto-save (local + cloud)
-  scheduleAutoSave();
+  // Companions tab: only for Archer > Beast Master level 2+
+  const compBtn = document.getElementById('tab-btn-companions');
+  if (compBtn) compBtn.style.display = (cls === 'Archer' && spec === 'Beast Master' && level >= 2) ? '' : 'none';
+  // Totems tab: only for Shaman level 1+
+  const totemBtn = document.getElementById('tab-btn-totems');
+  if (totemBtn) totemBtn.style.display = (cls === 'Shaman') ? '' : 'none';
+  if (cls === 'Shaman') {
+    updateTotemsTab(cls, spec, level);
+    buildHybridTable();
+  }
+  // Auto cloud save
   if (currentCharId) scheduleCloudSave();
 }
 
@@ -2916,13 +2990,26 @@ function getAllocatedLevels() {
   return (state.multiclasses.length > 0 ? mainLvl : getTotalCharacterLevel()) + mcTotal;
 }
 
+function meetsMulticlassReq(cls) {
+  const req = MULTICLASS_REQS[cls];
+  if (!req) return false;
+  return req.stats.every(stat => getBaseScore(stat) >= req.threshold);
+}
+
+function getMulticlassReqLabel(cls) {
+  const req = MULTICLASS_REQS[cls];
+  if (!req) return '';
+  const t = req.threshold;
+  return req.stats.map(s => `${s} ≥ ${t} (${getBaseScore(s)})`).join(' & ');
+}
+
 function getAvailableMulticlasses() {
   const mainCls = document.getElementById('sel-class').value;
   const taken   = state.multiclasses.map(m => m.cls);
   return Object.keys(MULTICLASS_REQS).filter(cls => {
     if (cls === mainCls) return false;
     if (taken.includes(cls)) return false;
-    return getBaseScore(MULTICLASS_REQS[cls]) >= 14;
+    return meetsMulticlassReq(cls);
   });
 }
 
@@ -3075,10 +3162,13 @@ function updateMulticlassUI() {
         btn.className = 'btn';
         btn.style.cssText = 'font-size:11px;padding:4px 10px;';
         btn.textContent = `+ ${cls}`;
-        btn.title = `Requires ${MULTICLASS_REQS[cls]} ≥ 14 (current: ${getBaseScore(MULTICLASS_REQS[cls])})`;
+        btn.title = `Requires: ${getMulticlassReqLabel(cls)}`;
         if (charLevel < 2) {
           btn.disabled = true;
           btn.title = 'Requires character level 2+';
+          btn.style.opacity = '0.4';
+        } else if (!meetsMulticlassReq(cls)) {
+          btn.disabled = true;
           btn.style.opacity = '0.4';
         }
         btn.onclick = () => addMulticlass(cls);
@@ -3374,19 +3464,22 @@ function getSkillPointsUsedThisLevel(level) {
 function addSkillPoint(skillName) {
   const xp    = parseInt(document.getElementById('inp-xp').value) || 0;
   const level = getLevel(xp);
-  const idx   = level - 1;
-  if (idx < 0 || idx >= state.skillPointHistory.length) return;
 
-  const lvlObj  = state.skillPointHistory[idx];
-  const usedThisLevel = Object.values(lvlObj).reduce((a, b) => a + b, 0);
+  // Find the next unlocked level with space that doesn't already have this skill
+  let targetLevel = null;
+  for (let l = 1; l <= level; l++) {
+    if (state.lockedLevels.has(l)) continue;
+    const idx = l - 1;
+    if (idx >= state.skillPointHistory.length) continue;
+    const lvlObj = state.skillPointHistory[idx];
+    const spent  = Object.values(lvlObj).reduce((a,b) => a+b, 0);
+    if (spent < 3 && !lvlObj[skillName]) { targetLevel = l; break; }
+  }
+  if (targetLevel === null) return;
 
-  // Rules: max 3 per level, max 1 per skill per level
-  if (usedThisLevel >= 3) return; // no points left this level
-  if (lvlObj[skillName]) return;  // already spent 1 on this skill this level
-
+  const lvlObj = state.skillPointHistory[targetLevel - 1];
   lvlObj[skillName] = 1;
 
-  // Add to skillPM
   state.skillPM[skillName] = Math.min(6, (state.skillPM[skillName] || 0) + 1);
   const id2 = skillName.replace(/\s+/g, '-');
   const inp = document.getElementById('skill-pm-' + id2);
@@ -3399,19 +3492,21 @@ function addSkillPoint(skillName) {
 function removeSkillPoint(skillName) {
   const xp    = parseInt(document.getElementById('inp-xp').value) || 0;
   const level = getLevel(xp);
-  const idx   = level - 1;
-  if (idx < 0 || idx >= state.skillPointHistory.length) return;
 
-  const lvlObj = state.skillPointHistory[idx];
-  if (!lvlObj[skillName]) return; // no point to remove for this level
+  // Remove from the highest unlocked level that has a point for this skill
+  let targetLevel = null;
+  for (let l = level; l >= 1; l--) {
+    if (state.lockedLevels.has(l)) continue;
+    const idx = l - 1;
+    if (idx < state.skillPointHistory.length && state.skillPointHistory[idx][skillName]) {
+      targetLevel = l; break;
+    }
+  }
+  if (targetLevel === null) return;
 
-  // Only allow removing from the CURRENT level
-  delete lvlObj[skillName];
+  delete state.skillPointHistory[targetLevel - 1][skillName];
 
-  // Recalc skillPM from scratch (sum all levels)
-  const total = getSkillLevelTotal(skillName);
-  // Preserve any freeform PM above what was from levels (shouldn't be, but safe)
-  state.skillPM[skillName] = Math.min(6, Math.max(0, total));
+  state.skillPM[skillName] = Math.min(6, Math.max(0, getSkillLevelTotal(skillName)));
   const id2 = skillName.replace(/\s+/g, '-');
   const inp = document.getElementById('skill-pm-' + id2);
   if (inp) inp.value = state.skillPM[skillName];
@@ -3427,43 +3522,78 @@ function lockSkillPoints() {
   updateSkillPointUI(level);
 }
 
-function updateSkillPointUI(level) {
-  const usedThisLevel = getSkillPointsUsedThisLevel(level);
-  const remaining     = 3 - usedThisLevel;
-  const isLocked      = state.lockedLevels.has(level);
+function getTotalSkillPointPool(level) {
+  // Total points earned = 3 per level, but only for unlocked levels
+  // Points remaining = total earned - total spent across all unlocked levels
+  let totalEarned = 0;
+  let totalSpent  = 0;
+  for (let l = 1; l <= level; l++) {
+    const idx = l - 1;
+    if (idx >= state.skillPointHistory.length) break;
+    const lvlSpent = Object.values(state.skillPointHistory[idx]).reduce((a,b) => a+b, 0);
+    totalSpent += lvlSpent;
+    if (!state.lockedLevels.has(l)) {
+      totalEarned += 3; // 3 points per unlocked level
+    } else {
+      totalEarned += lvlSpent; // locked levels: earned = spent (can't change)
+    }
+  }
+  return { totalEarned, totalSpent, remaining: totalEarned - totalSpent };
+}
 
-  // Remaining counter
+function getNextUnlockedLevelWithSpace(level) {
+  // Find the lowest unlocked level that still has points available
+  for (let l = 1; l <= level; l++) {
+    if (state.lockedLevels.has(l)) continue;
+    const idx = l - 1;
+    if (idx >= state.skillPointHistory.length) continue;
+    const spent = Object.values(state.skillPointHistory[idx]).reduce((a,b) => a+b, 0);
+    if (spent < 3) return l;
+  }
+  return null;
+}
+
+function updateSkillPointUI(level) {
+  const { totalEarned, totalSpent, remaining } = getTotalSkillPointPool(level);
+
+  // Show total remaining across all levels
   const remEl = document.getElementById('skill-pts-remaining');
   if (remEl) {
-    remEl.textContent = isLocked ? '—' : remaining;
-    remEl.style.color = isLocked ? 'var(--text3)' : (remaining === 0 ? 'var(--text3)' : 'var(--teal)');
+    remEl.textContent = remaining;
+    remEl.style.color = remaining === 0 ? 'var(--text3)' : 'var(--teal)';
   }
 
-  // Lock button — show when there are points used but not yet locked
+  // Show/hide lock button — show when current level has any spent but unlocked points
+  const usedThisLevel = getSkillPointsUsedThisLevel(level);
+  const isLockedThis  = state.lockedLevels.has(level);
   const lockBtn    = document.getElementById('skill-lock-btn');
   const lockStatus = document.getElementById('skill-lock-status');
-  if (lockBtn) {
-    // Show button only if at least 1 point was spent this level and level is not locked
-    lockBtn.style.display = (!isLocked && usedThisLevel > 0) ? '' : 'none';
-  }
-  if (lockStatus) {
-    lockStatus.style.display = isLocked ? '' : 'none';
-  }
+  if (lockBtn)    lockBtn.style.display    = (!isLockedThis && usedThisLevel > 0) ? '' : 'none';
+  if (lockStatus) lockStatus.style.display = isLockedThis ? '' : 'none';
 
-  const idx    = level - 1;
-  const lvlObj = (idx >= 0 && idx < state.skillPointHistory.length)
-    ? state.skillPointHistory[idx] : {};
-
-  // Update each skill's add/remove buttons
+  // For each skill: can add if there are remaining pool points AND
+  // the next available level slot doesn't already have this skill
+  // Can remove if any unlocked level has a point for this skill
   SKILL_DEFS.forEach(s => {
     const id2       = s.name.replace(/\s+/g, '-');
     const addBtn    = document.getElementById('skillpt-add-' + id2);
     const removeBtn = document.getElementById('skillpt-rem-' + id2);
     const totalEl   = document.getElementById('skillpt-tot-' + id2);
-    const hasThisLvl = !!lvlObj[s.name];
 
-    if (addBtn)    addBtn.disabled    = isLocked || remaining === 0 || hasThisLvl;
-    if (removeBtn) removeBtn.disabled = isLocked || !hasThisLvl;
+    // Can add: pool has points AND there's an unlocked level with space that doesn't have this skill yet
+    const targetLevel = getNextUnlockedLevelWithSpace(level);
+    const targetHasSkill = targetLevel
+      ? !!(state.skillPointHistory[targetLevel-1]?.[s.name])
+      : false;
+    const canAdd = remaining > 0 && targetLevel !== null && !targetHasSkill;
+
+    // Can remove: any unlocked level has a point for this skill
+    const canRemove = Array.from({length: level}, (_, i) => i).some(i => {
+      return !state.lockedLevels.has(i+1) && !!state.skillPointHistory[i]?.[s.name];
+    });
+
+    if (addBtn)    addBtn.disabled    = !canAdd;
+    if (removeBtn) removeBtn.disabled = !canRemove;
     if (totalEl)   totalEl.textContent = getSkillLevelTotal(s.name) || '';
   });
 }
@@ -3668,20 +3798,21 @@ function addProfRow(tbody, p, i) {
              cursor:pointer;width:100%;">
       ${(()=>{ const name=p.name; const s=v=>v===name?' selected':'';
         return '<option value="">— Select —</option>' +
-          '<optgroup label="─ Blacksmithing ─">' +
-            `<option value="Blacksmithing"${s('Blacksmithing')}>Blacksmithing</option>` +
-            `<option value="Armorsmithing"${s('Armorsmithing')}>  └ Armorsmithing</option>` +
-            `<option value="Weaponsmithing"${s('Weaponsmithing')}>  └ Weaponsmithing</option>` +
-          '</optgroup>' +
-          '<optgroup label="─ Alchemy ─">' +
-            `<option value="Alchemy"${s('Alchemy')}>Alchemy</option>` +
-            `<option value="Apothecary"${s('Apothecary')}>  └ Apothecary</option>` +
-            `<option value="Brewmaster"${s('Brewmaster')}>  └ Brewmaster</option>` +
-            `<option value="Plague Doctor"${s('Plague Doctor')}>  └ Plague Doctor</option>` +
-          '</optgroup>' +
           '<optgroup label="─ Crafting Professions ─">' +
-          ['Weaver','Leatherworking','Enchanting','Jewelcrafting','Woodworking (offline)','Fishing','Cooking']
-            .map(opt=>`<option value="${opt}"${s(opt)}>${opt}</option>`).join('') +
+            `<option value="Blacksmithing"${s('Blacksmithing')}>Blacksmithing (BRW+INT)</option>` +
+            `<option value="Armorsmithing"${s('Armorsmithing')}>  └ Armorsmithing (BRW+INT)</option>` +
+            `<option value="Weaponsmithing"${s('Weaponsmithing')}>  └ Weaponsmithing (BRW+INT)</option>` +
+            `<option value="Alchemy"${s('Alchemy')}>Alchemy (PHY+LUCK)</option>` +
+            `<option value="Apothecary"${s('Apothecary')}>  └ Apothecary (PHY+LUCK)</option>` +
+            `<option value="Brewmaster"${s('Brewmaster')}>  └ Brewmaster (PHY+LUCK)</option>` +
+            `<option value="Plague Doctor"${s('Plague Doctor')}>  └ Plague Doctor (PHY+LUCK)</option>` +
+            `<option value="Weaver"${s('Weaver')}>Weaver (INT+CHAR)</option>` +
+            `<option value="Leatherworking"${s('Leatherworking')}>Leatherworking (AGI+INT)</option>` +
+            `<option value="Enchanting"${s('Enchanting')}>Enchanting (INT+WILL)</option>` +
+            `<option value="Jewelcrafting"${s('Jewelcrafting')}>Jewelcrafting (AGI+LUCK)</option>` +
+            `<option value="Woodworking (offline)"${s('Woodworking (offline)')}>Woodworking (AGI+BRW)</option>` +
+            `<option value="Fishing"${s('Fishing')}>Fishing</option>` +
+            `<option value="Cooking"${s('Cooking')}>Cooking</option>` +
           '</optgroup>' +
           '<optgroup label="─ Gathering Professions ─">' +
           ['Herbalism','Mining','Prospecting','Runecarving','Skinning','Tailoring','Woodcutting']
@@ -4314,9 +4445,28 @@ function addManaSpellRow(containerId, mana, maxRanks) {
     }
   }
   row.innerHTML = `
-    <input type="text" class="spell-name-in" placeholder="Ability name..." onchange="updateSpellsDisplay()">
-    <input type="text" class="spell-dmg-in" placeholder="Dmg" onchange="updateSpellsDisplay()">
-    ${ranks}`;
+    <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center;width:100%;padding:4px 0;">
+      <input type="text" class="spell-name-in" placeholder="Ability name..." onchange="updateSpellsDisplay()"
+        style="flex:2;min-width:140px;">
+      <select class="spell-action-in" onchange="updateSpellsDisplay()"
+        style="background:var(--bg4);border:1px solid var(--border);border-radius:3px;color:var(--text);font-size:11px;padding:3px 5px;width:90px;">
+        <option value="">Action</option>
+        <option value="Action">Action</option>
+        <option value="Bonus">Bonus Action</option>
+        <option value="Reaction">Reaction</option>
+        <option value="Free">Free</option>
+      </select>
+      <input type="text" class="spell-range-in" placeholder="Range" onchange="updateSpellsDisplay()"
+        style="background:var(--bg4);border:1px solid var(--border);border-radius:3px;color:var(--text);font-size:12px;padding:3px 6px;width:70px;">
+      <input type="text" class="spell-dmg-in" placeholder="Dmg" onchange="updateSpellsDisplay()"
+        style="background:var(--bg4);border:1px solid var(--border);border-radius:3px;color:var(--text);font-size:12px;padding:3px 6px;width:60px;">
+      <div style="display:flex;gap:4px;align-items:center;">${ranks}</div>
+    </div>
+    <div style="padding:2px 0 6px;">
+      <input type="text" class="spell-desc-in" placeholder="Description..." onchange="updateSpellsDisplay()"
+        style="width:100%;background:var(--bg4);border:1px solid var(--border);border-radius:3px;
+               color:var(--text2);font-size:11px;padding:3px 8px;">
+    </div>`;
   container.appendChild(row);
 }
 
@@ -4330,14 +4480,35 @@ function addSpecialSpellRow() {
   const row = document.createElement('div');
   row.className = 'spell-row';
   row.innerHTML = `
-    <input type="text" class="spell-name-in" placeholder="Ability name..." onchange="updateSpellsDisplay()">
-    <input type="text" class="spell-dmg-in" placeholder="Dmg/Charges" onchange="updateSpellsDisplay()">
-    <input type="checkbox" class="rank-cb" onchange="updateSpellsDisplay()">
-    <input type="checkbox" class="rank-cb" onchange="updateSpellsDisplay()">
-    <input type="checkbox" class="rank-cb" onchange="updateSpellsDisplay()">
-    <input type="checkbox" class="rank-cb" onchange="updateSpellsDisplay()">
-    <input type="checkbox" class="rank-cb" onchange="updateSpellsDisplay()">
-    <span></span>`;
+    <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center;width:100%;padding:4px 0;">
+      <input type="text" class="spell-name-in" placeholder="Ability name..." onchange="updateSpellsDisplay()"
+        style="flex:2;min-width:140px;">
+      <select class="spell-action-in" onchange="updateSpellsDisplay()"
+        style="background:var(--bg4);border:1px solid var(--border);border-radius:3px;color:var(--text);font-size:11px;padding:3px 5px;width:90px;">
+        <option value="">Action</option>
+        <option value="Action">Action</option>
+        <option value="Bonus">Bonus Action</option>
+        <option value="Reaction">Reaction</option>
+        <option value="Free">Free</option>
+      </select>
+      <input type="text" class="spell-range-in" placeholder="Range" onchange="updateSpellsDisplay()"
+        style="background:var(--bg4);border:1px solid var(--border);border-radius:3px;color:var(--text);font-size:12px;padding:3px 6px;width:70px;">
+      <input type="text" class="spell-dmg-in" placeholder="Dmg/Charges" onchange="updateSpellsDisplay()"
+        style="background:var(--bg4);border:1px solid var(--border);border-radius:3px;color:var(--text);font-size:12px;padding:3px 6px;width:80px;">
+      <div style="display:flex;gap:4px;align-items:center;">
+        <input type="checkbox" class="rank-cb" onchange="updateSpellsDisplay()">
+        <input type="checkbox" class="rank-cb" onchange="updateSpellsDisplay()">
+        <input type="checkbox" class="rank-cb" onchange="updateSpellsDisplay()">
+        <input type="checkbox" class="rank-cb" onchange="updateSpellsDisplay()">
+        <input type="checkbox" class="rank-cb" onchange="updateSpellsDisplay()">
+        <span></span>
+      </div>
+    </div>
+    <div style="padding:2px 0 6px;">
+      <input type="text" class="spell-desc-in" placeholder="Description..." onchange="updateSpellsDisplay()"
+        style="width:100%;background:var(--bg4);border:1px solid var(--border);border-radius:3px;
+               color:var(--text2);font-size:11px;padding:3px 8px;">
+    </div>`;
   container.appendChild(row);
 }
 
@@ -4345,27 +4516,36 @@ function updateSpellsDisplay() {
   const display = document.getElementById('main-spells-display');
   let html = '';
 
+  const renderSpell = (s, accentColor) => {
+    const actionTag = s.action ? `<span style="background:rgba(61,204,199,.12);color:var(--teal);font-size:10px;font-family:var(--font-mono);padding:1px 5px;border-radius:3px;margin-left:4px;">${s.action}</span>` : '';
+    const rangeTag  = s.range  ? `<span style="color:var(--text3);font-size:10px;font-family:var(--font-mono);margin-left:4px;">📍${s.range}</span>` : '';
+    const dmgTag    = s.dmg    ? `<span style="color:var(--orange);font-family:var(--font-mono);font-size:12px;margin-left:4px;">${s.dmg}</span>` : '';
+    const ranksTag  = s.ranks  ? `<span style="font-family:var(--font-mono);color:${accentColor};letter-spacing:2px;font-size:12px;margin-left:6px;">${s.ranks}</span>` : '';
+    const descTag   = s.desc   ? `<div style="font-size:11px;color:var(--text3);margin-left:10px;margin-top:1px;font-style:italic;line-height:1.4;">${s.desc}</div>` : '';
+    return `<div style="padding:3px 0;">
+      <div style="display:flex;align-items:center;flex-wrap:wrap;gap:2px;font-size:13px;">
+        <span style="color:var(--text);font-weight:600;">${s.name}</span>${actionTag}${rangeTag}${dmgTag}${ranksTag}
+      </div>${descTag}</div>`;
+  };
+
   // Special abilities
   const specRows = document.querySelectorAll('#special-spells .spell-row');
   const specAbilities = [];
   specRows.forEach(row => {
     const name = row.querySelector('.spell-name-in')?.value?.trim();
     if (!name) return;
-    const dmg = row.querySelector('.spell-dmg-in')?.value?.trim();
+    const dmg    = row.querySelector('.spell-dmg-in')?.value?.trim() || '';
+    const action = row.querySelector('.spell-action-in')?.value?.trim() || '';
+    const range  = row.querySelector('.spell-range-in')?.value?.trim() || '';
+    const desc   = row.querySelector('.spell-desc-in')?.value?.trim() || '';
     const checks = Array.from(row.querySelectorAll('.rank-cb'));
-    const ranks = checks.map(c => c.checked ? '✦' : '·').join('');
-    specAbilities.push({ name, dmg, ranks });
+    const ranks  = checks.map(c => c.checked ? '✦' : '·').join('');
+    specAbilities.push({ name, dmg, action, range, desc, ranks });
   });
 
   if (specAbilities.length > 0) {
     html += `<div style="font-family:var(--font-head);font-size:11px;color:var(--teal);letter-spacing:.08em;border-bottom:1px solid var(--border);padding-bottom:4px;margin-bottom:8px;">Special Abilities</div>`;
-    specAbilities.forEach(s => {
-      html += `<div style="display:flex;gap:8px;align-items:center;padding:3px 0;font-size:13px;">
-        <span style="flex:1;color:var(--text)">${s.name}</span>
-        ${s.dmg ? `<span style="color:var(--orange);font-family:var(--font-mono);font-size:12px">${s.dmg}</span>` : ''}
-        <span style="font-family:var(--font-mono);color:var(--teal);letter-spacing:2px">${s.ranks}</span>
-      </div>`;
-    });
+    specAbilities.forEach(s => { html += renderSpell(s, 'var(--teal)'); });
   }
 
   MANA_SECTIONS.filter(s => s.mana > 0).forEach(sec => {
@@ -4374,20 +4554,17 @@ function updateSpellsDisplay() {
     rows.forEach(row => {
       const name = row.querySelector('.spell-name-in')?.value?.trim();
       if (!name) return;
-      const dmg = row.querySelector('.spell-dmg-in')?.value?.trim();
+      const dmg    = row.querySelector('.spell-dmg-in')?.value?.trim() || '';
+      const action = row.querySelector('.spell-action-in')?.value?.trim() || '';
+      const range  = row.querySelector('.spell-range-in')?.value?.trim() || '';
+      const desc   = row.querySelector('.spell-desc-in')?.value?.trim() || '';
       const checks = Array.from(row.querySelectorAll('.rank-cb'));
-      const ranks = checks.map(c => c.checked ? '✦' : '·').join('');
-      spells.push({ name, dmg, ranks });
+      const ranks  = checks.map(c => c.checked ? '✦' : '·').join('');
+      spells.push({ name, dmg, action, range, desc, ranks });
     });
     if (spells.length === 0) return;
     html += `<div style="font-family:var(--font-head);font-size:11px;color:var(--gold);letter-spacing:.08em;border-bottom:1px solid var(--border);padding-bottom:4px;margin:10px 0 8px;">— ${sec.mana} Mana —</div>`;
-    spells.forEach(s => {
-      html += `<div style="display:flex;gap:8px;align-items:center;padding:3px 0;font-size:13px;">
-        <span style="flex:1;color:var(--text)">${s.name}</span>
-        ${s.dmg ? `<span style="color:var(--orange);font-family:var(--font-mono);font-size:12px">[${s.dmg}]</span>` : ''}
-        <span style="font-family:var(--font-mono);color:var(--teal);letter-spacing:2px;font-size:12px">${s.ranks}</span>
-      </div>`;
-    });
+    spells.forEach(s => { html += renderSpell(s, 'var(--gold)'); });
   });
 
   display.innerHTML = html || '<span style="color:var(--text3);font-size:13px;">Add spells in the Spells & Abilities tab.</span>';
@@ -5099,6 +5276,261 @@ function moveQuest(id, fromType, toType) {
 }
 
 // ════════════════════════════════════════════════════════════════
+// TOTEMS
+// ════════════════════════════════════════════════════════════════
+const BASE_TOTEMS = [
+  { name:'Air',   emoji:'🌪️', mana:'0/1',
+    rank1:'Grants +3 and +1d4 Initiative to allies within 30 feet of totem.',
+    desc: 'Grants +3 and +1d4 Initiative to allies within 30 feet of totem.' },
+  { name:'Fire',  emoji:'🔥', mana:'0/1',
+    rank1:'Shoots a firebolt (1d4) at closest enemy within 30 feet of totem, chance to Burn. Not resisted by magic armor, only natural resistances.',
+    desc: 'Shoots a firebolt (1d4) at closest enemy within 30 feet of totem, chance to Burn.' },
+  { name:'Water', emoji:'💧', mana:'0/1',
+    rank1:'Heals up to 2 wounded allies for 1 within 30 feet of totem, also increases range on outgoing water based heals by 10 feet.',
+    desc: 'Heals up to 2 wounded allies for 1 within 30 feet of totem. Increases range on outgoing water heals by 10 feet.' },
+  { name:'Earth', emoji:'🪨', mana:'0/1',
+    rank1:'Grants +1 Armor to allies within 30 feet of totem.',
+    desc: 'Grants +1 Armor to allies within 30 feet of totem.' },
+];
+
+// Specialization upgrades to empowered totem
+const SPEC_TOTEM_UPGRADES = {
+  'Elementalist': {
+    'Air':   { name:'Wrath of Air',   desc:'Increases WILL by 1 and increases spell damage by 1 to all allies within range, including yourself.' },
+    'Fire':  { name:'Wrath of Fire',  desc:'Increases your and your party\'s spell and melee critical chance by 5% (90–100%).' },
+    'Water': { name:'Wrath of Water', desc:'Totem fires water bolts at the nearest enemy within 25 feet, dealing 1d4+WILL water damage.' },
+    'Earth': { name:'Wrath of Earth', desc:'The totem grasps at enemies within range. All non-flying enemies must make an Acrobatics save or be Rooted/Oiled. The totem repeats this effect as long as it is not destroyed.' },
+  },
+  'Spirit Mender': {
+    'Air':   { name:'Grace of Air',   desc:'+1 AGI to allies within 30 feet of totem.' },
+    'Fire':  { name:'Grace of Fire',  desc:'+1 CHAR to allies within 30 feet of totem.' },
+    'Water': { name:'Grace of Water', desc:'Water totem healing receives benefit from 1/2 your WILL modifier (rounded up), split however you wish among the targets healed.' },
+    'Earth': { name:'Grace of Earth', desc:'+1 BRW to allies within 30 feet of the totem.' },
+  },
+  'Totemic Warrior': {
+    'Air':   { name:'Strength of Air',   desc:'Makes any ranged attack against the Shaman and allies within range deal -2 damage. Transfer 2 damage taken from ranged/spells from any ally within range to the totem.' },
+    'Fire':  { name:'Strength of Fire',  desc:'The fire protects you as if alive, each turn it will attempt to taunt the furthest target up to 60 feet out. Target must succeed on a WILL save with your base DC.' },
+    'Water': { name:'Strength of Water', desc:'Creates an aura of fire resistance for allies within 30 feet, reducing fire damage by 1d4+shaman level. Transfer 2 damage taken from melee from any ally to the totem (totem does not gain this benefit).' },
+    'Earth': { name:'Strength of Earth', desc:'Now grants +1 Defense in addition to the armor benefit.' },
+  },
+};
+
+const HYBRID_TOTEMS = [
+  { name:'Thunder (Air+Earth)',    mana:1, desc:'Pulses thunder for the duration. Deals 1d8 Lightning damage in a 20 ft radius, knocks back enemies 10 ft directly from the totem. BRW save on knockback. Lasts 3 turns. After bonus fades, totems revert to original state.' },
+  { name:'Volcano (Fire+Fire)',    mana:1, desc:'Fires a volcano bolt at the nearest enemy within range. Damage is 2× the base damage of a normal fire totem, deals 1/2 damage to all targets within 5 feet of the initial target.' },
+  { name:'Magma (Earth+Fire)',     mana:1, desc:'Pulses fire from totems to all enemies within 10 feet, dealing 2d4 Fire damage with high chance of being burned (30%). Lasts 3 turns. After bonus fades, totems revert to earth and fire state.' },
+  { name:'Grounding (Air+Air)',    mana:1, desc:'Creates a 15 ft diameter aura reducing ranged and magic damage taken for all allies in the area by 3 (includes spiritual resistance). Absorbs the next hostile spell cast at a nearby party member (once per turn max). Lasts 3 turns.' },
+  { name:'Ice (Air+Water)',        mana:1, desc:'Enemies within 15 feet of these totems have movement speed halved. Each turn enemies must succeed on a PHY save or suffer 1 stack of Frost. Lasts 3 turns. After bonus fades, totems revert to air and water state.' },
+  { name:'Poison (Water+Earth)',   mana:1, desc:'Emits a cloud of poison in 20 ft radius, causing 2d6 poison damage, also applies Poison stack (PHY save). Lasts 3 turns. Enemies must make a PHY save at the start of each turn or take another stack of poison. After bonus fades, totems revert to water and earth state.' },
+  { name:'Lightning (Air+Fire)',   mana:1, desc:'Empowers Lightning spells to deal an additional +1d6 damage for the Shaman and anybody else who uses Lightning damage. Lasts 3 turns. After bonus fades, totems revert to air and fire state.' },
+  { name:'Mana (Fire+Water)',      mana:1, desc:'Restores 1 mana every 3 rounds (expires out of combat). Each spell cast while this totem is active removes a round before the mana is restored, resetting back to 3 once completed. After this bonus, reverts back to normal fire and water totems.' },
+  { name:'Deluge (Water+Water)',   mana:1, desc:'Lasts 3 turns, fires two waves of healing water toward the two most wounded allies. Water is 10 ft wide, travels up to 30 ft, healing all allies in the travel distance for 3 (scales with a 2 mana cost utility spell), cleansing 1 elemental or spiritual ailment. After these deluges, totems revert to normal water totems.' },
+  { name:'Tremor (Earth+Earth)',   mana:1, desc:'Immediately ends fear/charm effects on the party, and makes them immune to these effects for the next 3 turns. Additionally creates difficult terrain in the 20 feet surrounding the totem.' },
+  { name:'Rumbling (Earth×3)',     mana:1, desc:'This totem violently pulses for the next 3 turns. Allies are immune to fear/charm effects for the duration. Enemies must succeed on a BRW save or suffer 2d6 earth damage and be knocked prone. Successful saves deal half damage and instead receive 1 stack of Stagger.' },
+  { name:'Fury of Wind (Air×3)',   mana:1, desc:'This totem grants any bonuses from air or empowered air totems already present and additionally grants all allies within range Air\'s Fury weapon enhancements for the duration of the totem.' },
+  { name:'Tsunami (Water×3)',      mana:1, desc:'Fires a healing wave toward the most wounded ally within range. The wave is 15 ft wide, travels up to 30 ft. All allies hit are healed for 1d4 (scales with a 3 mana cost utility spell) and cleansed of 1 elemental or spiritual ailment. Enemies suffer 2d6 water damage + 1d6 physical and must succeed on a BRW save or be dragged along the wave\'s path.' },
+  { name:'Inferno (Fire×3)',       mana:1, desc:'Firebolts are turned into Molten Brands. Allies in a 20 ft radius are granted Flamebrand weapon enhancement for the duration. After this bonus the totems revert back to normal fire totems.' },
+];
+
+let chosenTotem    = null;   // base element: 'Air'|'Fire'|'Water'|'Earth'
+let chosenTotem2   = null;   // second totem element (level 4+)
+let totemLocked    = false;
+let totemLocked2   = false;
+let totemInstances = [];     // [{slot:1|2, active:bool, hp:0}]
+
+function adjustTotemFusion(delta) {
+  const el = document.getElementById('totem-fusion-charges');
+  if (!el) return;
+  const cur = parseInt(el.textContent) || 0;
+  el.textContent = Math.max(0, Math.min(2, cur + delta));
+}
+
+function buildTotemHybridTable() { buildHybridTable(); }
+
+function updateTotemsTab(cls, spec, level) {
+  const totemCard = document.getElementById('tab-btn-totems');
+  if (cls !== 'Shaman') return;
+
+  // Picker
+  buildTotemPicker(spec, level);
+  buildTotemSlots(level);
+
+  // Hybrid table (level 4+)
+  const hybridCard = document.getElementById('totem-hybrid-card');
+  if (hybridCard) hybridCard.style.display = level >= 4 ? '' : 'none';
+  const fusionCard = document.getElementById('totem-fusion-card');
+  if (fusionCard) fusionCard.style.display = level >= 4 ? '' : 'none';
+  if (level >= 4) buildHybridTable();
+}
+
+function renderTotemCard(element, isEmpowered, spec, level, rank2) {
+  const totemData = BASE_TOTEMS.find(t => t.name === element);
+  const emoji     = totemData?.emoji || '🌀';
+  const upgrade   = isEmpowered && spec && SPEC_TOTEM_UPGRADES[spec] ? SPEC_TOTEM_UPGRADES[spec][element] : null;
+  const dispName  = (level >= 3 && upgrade) ? upgrade.name : element + ' Totem';
+  const dispDesc  = (level >= 3 && upgrade) ? upgrade.desc : (totemData?.rank1 || '');
+  return `<div style="background:var(--bg3);border:2px solid var(--teal);border-radius:8px;padding:14px 18px;min-width:200px;max-width:260px;">
+    <div style="font-size:22px;margin-bottom:6px;">${emoji}</div>
+    <div style="font-weight:700;color:var(--teal);font-size:14px;margin-bottom:4px;">
+      ${dispName}
+      ${rank2 ? '<span style="font-size:10px;color:var(--gold);margin-left:8px;font-family:var(--font-mono);">RANK 2</span>' : ''}
+    </div>
+    <div style="font-size:11px;color:var(--text3);font-family:var(--font-mono);margin-bottom:6px;">
+      ${rank2 ? '7 Defense · 1d6×Level HP' : '4 Defense · 1d4×Level HP'} · Mana 0/1
+    </div>
+    <div style="font-size:12px;color:var(--text2);line-height:1.6;">${dispDesc}</div>
+  </div>`;
+}
+
+function buildSingleTotemPicker(containerEl, currentChoice, isLocked, slotNum, spec, level) {
+  containerEl.innerHTML = '';
+  const rank2 = level >= 4;
+
+  if (isLocked && currentChoice) {
+    containerEl.innerHTML = renderTotemCard(currentChoice, true, spec, level, rank2);
+    return;
+  }
+
+  // Show picker cards
+  BASE_TOTEMS.forEach(t => {
+    const btn = document.createElement('div');
+    btn.style.cssText = `background:var(--bg3);border:2px solid ${currentChoice===t.name?'var(--teal)':'var(--border)'};
+      border-radius:8px;padding:12px 16px;cursor:pointer;transition:all .2s;min-width:150px;max-width:220px;flex:1;`;
+    btn.innerHTML = `
+      <div style="font-size:22px;margin-bottom:6px;">${t.emoji}</div>
+      <div style="font-weight:700;color:var(--teal);margin-bottom:4px;">${t.name} Totem</div>
+      <div style="font-size:11px;color:var(--text3);font-family:var(--font-mono);margin-bottom:6px;">${t.mana} Mana</div>
+      <div style="font-size:12px;color:var(--text2);line-height:1.5;">${t.rank1}</div>`;
+    btn.onmouseenter = () => { btn.style.borderColor = 'var(--teal)'; };
+    btn.onmouseleave = () => { btn.style.borderColor = (slotNum===1?chosenTotem:chosenTotem2)===t.name ? 'var(--teal)' : 'var(--border)'; };
+    btn.onclick = () => {
+      if (confirm(`Lock in ${t.name} Totem for Slot ${slotNum}? This cannot be changed.`)) {
+        if (slotNum === 1) { chosenTotem = t.name; totemLocked = true; }
+        else               { chosenTotem2 = t.name; totemLocked2 = true; }
+        buildTotemPicker(spec, level);
+        buildTotemSlots(level);
+        buildHybridTable();
+        scheduleCloudSave();
+      }
+    };
+    containerEl.appendChild(btn);
+  });
+}
+
+function buildTotemPicker(spec, level) {
+  const el = document.getElementById('totem-picker-options');
+  const lockedEl = document.getElementById('totem-locked-display');
+  if (!el) return;
+
+  // Use the main picker area for slot 1
+  el.style.display = (!totemLocked) ? 'flex' : 'none';
+  if (lockedEl) lockedEl.style.display = totemLocked ? '' : 'none';
+
+  if (!totemLocked) {
+    buildSingleTotemPicker(el, chosenTotem, false, 1, spec, level);
+    return;
+  }
+
+  // Slot 1 locked — show in locked display
+  if (lockedEl) {
+    lockedEl.innerHTML = `<div style="margin-bottom:12px;font-size:10px;color:var(--text3);font-family:var(--font-mono);letter-spacing:.07em;">TOTEM 1 (LOCKED)</div>
+      <div style="display:flex;gap:16px;flex-wrap:wrap;">
+        ${renderTotemCard(chosenTotem, true, spec, level, level>=4)}
+      </div>`;
+
+    // Slot 2 (level 4+)
+    if (level >= 4) {
+      lockedEl.innerHTML += `<div style="margin-top:16px;margin-bottom:8px;font-size:10px;color:var(--text3);font-family:var(--font-mono);letter-spacing:.07em;">TOTEM 2${totemLocked2 ? ' (LOCKED)' : ' — Choose your second totem'}</div>`;
+      if (totemLocked2 && chosenTotem2) {
+        lockedEl.innerHTML += `<div style="display:flex;gap:16px;flex-wrap:wrap;">${renderTotemCard(chosenTotem2, false, spec, level, true)}</div>`;
+      } else {
+        const slot2Container = document.createElement('div');
+        slot2Container.style.cssText = 'display:flex;gap:10px;flex-wrap:wrap;margin-top:8px;';
+        lockedEl.appendChild(slot2Container);
+        buildSingleTotemPicker(slot2Container, chosenTotem2, false, 2, spec, level);
+      }
+    }
+  }
+}
+
+function buildHybridTable() {
+  const tbody = document.getElementById('totem-hybrid-tbody');
+  if (!tbody) return;
+  tbody.innerHTML = '';
+
+  // Get available totems
+  const available = [chosenTotem, chosenTotem2].filter(Boolean);
+  if (available.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="3" style="padding:12px;color:var(--text3);text-align:center;">Choose your totems to see available hybrids.</td></tr>';
+    return;
+  }
+
+  // Filter hybrids to those matching available elements
+  const filtered = HYBRID_TOTEMS.filter(t => {
+    const name = t.name.toLowerCase();
+    // Parse required elements from name (e.g. "Air+Earth", "Fire+Fire", "Water×3")
+    const allElements = available.map(e => e.toLowerCase());
+    // Extract element mentions in the name
+    const elements = ['air','fire','water','earth'].filter(e => name.includes(e));
+    // Check if all required elements are available
+    const counts = {};
+    elements.forEach(e => { counts[e] = (counts[e]||0) + 1; });
+    const availCounts = {};
+    allElements.forEach(e => { availCounts[e] = (availCounts[e]||0) + 1; });
+    return Object.entries(counts).every(([e, need]) => (availCounts[e]||0) >= need);
+  });
+
+  if (filtered.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="3" style="padding:12px;color:var(--text3);text-align:center;">No hybrid totems available for your current totem combination.</td></tr>';
+    return;
+  }
+
+  filtered.forEach((t, i) => {
+    const tr = document.createElement('tr');
+    tr.style.cssText = `background:${i%2===0?'var(--bg2)':'var(--bg3)'};border-bottom:1px solid var(--border);`;
+    tr.innerHTML = `
+      <td style="padding:8px 12px;font-weight:700;color:var(--purple);white-space:nowrap;vertical-align:top;">${t.name}</td>
+      <td style="padding:8px 12px;text-align:center;color:var(--accent);font-family:var(--font-mono);vertical-align:top;">${t.mana}</td>
+      <td style="padding:8px 12px;color:var(--text2);vertical-align:top;">${t.desc}</td>`;
+    tbody.appendChild(tr);
+  });
+}
+
+function buildTotemSlots(level) {
+  const el = document.getElementById('totem-slots');
+  if (!el) return;
+  const numSlots = level >= 4 ? 2 : 1;
+  const rank2    = level >= 4;
+
+  el.innerHTML = '';
+  for (let i = 1; i <= numSlots; i++) {
+    if (!totemInstances[i-1]) totemInstances[i-1] = { active: false, hp: 0 };
+    const inst = totemInstances[i-1];
+    const slot = document.createElement('div');
+    slot.style.cssText = 'background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:12px 16px;margin-bottom:10px;';
+    const totemName = chosenTotem ? (chosenTotem + ' Totem') : '— No Totem Chosen —';
+    slot.innerHTML = `
+      <div style="display:flex;align-items:center;gap:16px;flex-wrap:wrap;">
+        <div style="font-weight:700;color:var(--teal);font-size:13px;">Totem ${i}: ${totemName}</div>
+        <div style="font-size:11px;color:var(--text3);font-family:var(--font-mono);">
+          ${rank2 ? '7 DEF · 1d6×Lvl HP' : '4 DEF · 1d4×Lvl HP'}
+        </div>
+        <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:13px;margin-left:auto;">
+          <input type="checkbox" ${inst.active ? 'checked' : ''} onchange="totemInstances[${i-1}].active=this.checked"
+            style="width:16px;height:16px;accent-color:var(--teal);"> Active
+        </label>
+        <div style="display:flex;align-items:center;gap:6px;">
+          <span style="font-size:10px;color:var(--text3);font-family:var(--font-mono);">HP</span>
+          <button class="vital-adj-btn" onclick="totemInstances[${i-1}].hp=Math.max(0,totemInstances[${i-1}].hp-1);this.nextElementSibling.textContent=totemInstances[${i-1}].hp">−</button>
+          <span style="font-family:var(--font-mono);font-size:16px;font-weight:700;color:var(--green);min-width:24px;text-align:center;">${inst.hp}</span>
+          <button class="vital-adj-btn" onclick="totemInstances[${i-1}].hp++;this.previousElementSibling.textContent=totemInstances[${i-1}].hp">+</button>
+        </div>
+      </div>`;
+    el.appendChild(slot);
+  }
+}
+
+// ════════════════════════════════════════════════════════════════
 // SHAPESHIFTING
 // ════════════════════════════════════════════════════════════════
 
@@ -5157,20 +5589,52 @@ function adjustShapeshiftCharge(delta) {
   if (el) el.textContent = ssCharges;
 }
 
-function updateShapeshiftForm() {
-  const formName  = document.getElementById('ss-current-form')?.value || '';
-  const infoBox   = document.getElementById('ss-active-info');
-  const bonusEl   = document.getElementById('ss-form-bonuses');
-  const descEl    = document.getElementById('ss-form-desc');
-  const ironFur   = document.getElementById('ss-iron-fur');
-  const ancBox    = document.getElementById('ss-ancient-rooted');
-  const detCard   = document.getElementById('ss-form-detail-card');
+// Map of form bonuses that apply to stats/skills
+const FORM_STAT_BONUSES = {
+  'Ursine Form':    { BRW:1, armor:1 },
+  'Ape Form':       { BRW:1 },
+  'Feline Form':    { AGI:1, 'skill_Stealth':2 },
+  'Lupine Form':    { AGI:1 },
+  'Arachnid Form':  { AGI:1 },
+  'Amphibian Form': { AGI:1 },
+  'Porcine Form':   { BRW:1, WILL:1 },
+  'Weasel Form':    { AGI:1, init:2 },
+  'Reptilian Form': { BRW:1 },
+  'Insectoid Form': { BRW:1, WILL:1 },
+  'Piscine Form':   { BRW:1 },
+  'Avian Form':     { AGI:1 },
+  'Ancient Form':   { WILL:1, armor:1 },
+  // Warden mastery overrides
+  'Ursine Form (Warden)': { BRW:1, armor:1 },
+  'Feline Form (Warden)': { AGI:1, 'skill_Stealth':2 },
+  'Arachnid Form (Warden)': { AGI:1, WILL:1 },
+  // Iron Fur adds +1 def for Warden in any form
+};
 
-  const specVal = document.getElementById('sel-spec')?.value || '';
+function applyShapeshiftBonuses(formName, specVal) {
+  state.shapeshiftBonuses = {};
+  if (!formName) return;
+  // Base form bonuses
+  const bonuses = FORM_STAT_BONUSES[formName] || {};
+  Object.assign(state.shapeshiftBonuses, bonuses);
+  // Warden Iron Fur: +1 defense in any combat form
+  if (specVal === 'Warden') {
+    state.shapeshiftBonuses.def = (state.shapeshiftBonuses.def || 0) + 1;
+  }
+}
+
+function updateShapeshiftFormDisplay() {
+  // Just update the visual display without triggering recalc
+  const formName = document.getElementById('ss-current-form')?.value || '';
+  const infoBox  = document.getElementById('ss-active-info');
+  const bonusEl  = document.getElementById('ss-form-bonuses');
+  const descEl   = document.getElementById('ss-form-desc');
+  const ironFur  = document.getElementById('ss-iron-fur');
+  const ancBox   = document.getElementById('ss-ancient-rooted');
+  const specVal  = document.getElementById('sel-spec')?.value || '';
 
   if (formName) {
     if (infoBox) infoBox.style.display = '';
-    // Look up bonuses / desc from data
     const allForms = [...COMBAT_FORMS, ...UTILITY_FORMS];
     const formData = allForms.find(f => f.name === formName);
     if (formData) {
@@ -5180,9 +5644,17 @@ function updateShapeshiftForm() {
   } else {
     if (infoBox) infoBox.style.display = 'none';
   }
-
   if (ironFur) ironFur.style.display = (formName && specVal === 'Warden') ? '' : 'none';
   if (ancBox)  ancBox.style.display  = formName === 'Ancient Form' ? '' : 'none';
+}
+
+function updateShapeshiftForm() {
+  // Called by the dropdown onchange — apply bonuses then recalc once
+  const formName = document.getElementById('ss-current-form')?.value || '';
+  const specVal  = document.getElementById('sel-spec')?.value || '';
+  applyShapeshiftBonuses(formName, specVal);
+  updateShapeshiftFormDisplay();
+  recalc();
 }
 
 function updateMasteryDetailCard(spec) {
@@ -5225,6 +5697,9 @@ function populateFormDropdown(spec) {
   const sel = document.getElementById('ss-current-form');
   if (!sel) return;
 
+  // Preserve current selection before rebuilding
+  const prevValue = sel.value;
+
   // Clear all options except first
   while (sel.options.length > 1) sel.remove(1);
 
@@ -5242,11 +5717,17 @@ function populateFormDropdown(spec) {
     opt.value = KEEPER_FORM.form; opt.textContent = KEEPER_FORM.form;
     sel.appendChild(opt);
   }
-  // Reset selection if current value no longer valid
-  if (sel.value === '' || !Array.from(sel.options).some(o => o.value === sel.value)) {
+
+  // Restore previous selection if still valid, otherwise clear
+  if (prevValue && Array.from(sel.options).some(o => o.value === prevValue)) {
+    sel.value = prevValue;
+  } else {
     sel.value = '';
   }
-  updateShapeshiftForm();
+
+  // Update bonuses display WITHOUT calling recalc (avoid infinite loop)
+  applyShapeshiftBonuses(sel.value, spec);
+  updateShapeshiftFormDisplay();
 }
 
 function applyMasteryHighlight(key) {
@@ -5548,8 +6029,10 @@ function initCollapsibleCards() {
       arrow.textContent = '▼';
       header.appendChild(arrow);
     }
+    // Only add listener once — check for sentinel attribute
+    if (header.dataset.collapseBound) return;
+    header.dataset.collapseBound = '1';
     header.addEventListener('click', function(e) {
-      // Don't collapse if clicking a button inside the header
       if (e.target.closest('button')) return;
       const card = this.closest('.card');
       if (card) card.classList.toggle('collapsed');
@@ -5605,6 +6088,11 @@ function buildSaveData() {
       ssSelectedMastery:        ssSelectedMastery,
       ssSelectedUtility:        ssSelectedUtility,
       ssCharges:                ssCharges,
+      chosenTotem:              chosenTotem,
+      chosenTotem2:             chosenTotem2,
+      totemLocked:              totemLocked,
+      totemLocked2:             totemLocked2,
+      totemInstances:           totemInstances,
     },
     fields: collectFormValues(),
     theme: document.documentElement.getAttribute('data-theme') || '',
@@ -5750,7 +6238,6 @@ function saveCharacter() {
   document.body.appendChild(a); a.click();
   document.body.removeChild(a);
   URL.revokeObjectURL(url);
-  autoSaveToLocalStorage();
   showSaveBanner('✓ Saved as ' + filename);
 }
 
@@ -5775,26 +6262,13 @@ function loadCharacter(event) {
 
 // ── AUTO-SAVE to localStorage ─────────────────────────────────────────────────
 const LS_KEY = 'lov_character_autosave';
-let autoSaveTimer = null;
 
 function autoSaveToLocalStorage() {
-  try {
-    const data = buildSaveData();
-    // Portrait can be large — store separately to avoid quota issues
-    const portrait = data.portraitDataUrl;
-    data.portraitDataUrl = null;
-    localStorage.setItem(LS_KEY, JSON.stringify(data));
-    if (portrait) localStorage.setItem(LS_KEY + '_portrait', portrait);
-    else localStorage.removeItem(LS_KEY + '_portrait');
-    updateAutoSaveIndicator();
-  } catch(e) {
-    console.warn('Auto-save failed:', e);
-  }
+  // localStorage auto-save disabled — using cloud save only
 }
 
 function scheduleAutoSave() {
-  clearTimeout(autoSaveTimer);
-  autoSaveTimer = setTimeout(autoSaveToLocalStorage, 1200);
+  // localStorage auto-save disabled — using cloud save only
 }
 
 function loadFromLocalStorage() {
@@ -5814,14 +6288,7 @@ function loadFromLocalStorage() {
 }
 
 function updateAutoSaveIndicator() {
-  const el = document.getElementById('autosave-indicator');
-  if (!el) return;
-  const d = new Date();
-  const t = d.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'});
-  el.textContent = '💾 Auto-saved ' + t;
-  el.style.opacity = '1';
-  clearTimeout(el._fadeTimer);
-  el._fadeTimer = setTimeout(() => { el.style.opacity = '0.4'; }, 3000);
+  // localStorage indicator removed
 }
 
 function clearAutoSave() {
@@ -6119,21 +6586,33 @@ const SUPABASE_CONFIGURED = (typeof SUPABASE_URL === 'string' && SUPABASE_URL.st
 
 // Boot: init Supabase or show config warning
 (async function bootAuth() {
-  if (!SUPABASE_CONFIGURED) {
+  // Wait for Supabase SDK to be available (CDN may load async)
+  let attempts = 0;
+  while (!window.supabase && attempts < 20) {
+    await new Promise(r => setTimeout(r, 100));
+    attempts++;
+  }
+
+  if (!SUPABASE_CONFIGURED || !window.supabase) {
     document.getElementById('auth-config-warning').style.display = 'block';
     document.getElementById('auth-submit-btn').style.display = 'none';
-    document.querySelectorAll('.auth-tab-btn').forEach(b => b.style.display = 'none');
+    document.getElementById('auth-overlay').style.display = 'flex';
     return;
   }
-  supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
-  // Check for existing session
-  const { data: { session } } = await supabaseClient.auth.getSession();
-  if (session) {
-    currentUser = session.user;
-    showCharSelect();
-  } else {
-    // Show auth overlay
+
+  try {
+    supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
+    const { data: { session } } = await supabaseClient.auth.getSession();
+    if (session) {
+      currentUser = session.user;
+      showCharSelect();
+    } else {
+      document.getElementById('auth-overlay').style.display = 'flex';
+    }
+  } catch(e) {
+    console.error('Supabase init error:', e);
     document.getElementById('auth-overlay').style.display = 'flex';
+    showAuthMsg('Connection error. Check your Supabase keys.', 'error');
   }
 })();
 
@@ -6170,24 +6649,39 @@ async function handleAuthSubmit() {
   if (!email || !password) { showAuthMsg('Please fill in all fields.', 'error'); return; }
   if (authMode === 'register' && !name) { showAuthMsg('Please enter a display name.', 'error'); return; }
 
+  // If supabaseClient isn't ready yet, try to init it now
+  if (!supabaseClient) {
+    try {
+      supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
+    } catch(e) {
+      showAuthMsg('Connection error: ' + e.message, 'error'); return;
+    }
+  }
+
   btn.textContent = '...'; btn.disabled = true;
 
-  if (authMode === 'register') {
-    const { data, error } = await supabaseClient.auth.signUp({
-      email, password,
-      options: { data: { display_name: name } }
-    });
-    if (error) { showAuthMsg(error.message, 'error'); btn.textContent = 'CREATE ACCOUNT'; btn.disabled = false; return; }
-    showAuthMsg('Account created! Check your email to confirm, then sign in.', 'success');
-    switchAuthTab('login');
-  } else {
-    const { data, error } = await supabaseClient.auth.signInWithPassword({ email, password });
-    if (error) { showAuthMsg(error.message, 'error'); btn.textContent = 'SIGN IN'; btn.disabled = false; return; }
-    currentUser = data.user;
-    document.getElementById('auth-overlay').style.display = 'none';
-    showCharSelect();
+  try {
+    if (authMode === 'register') {
+      const { data, error } = await supabaseClient.auth.signUp({
+        email, password,
+        options: { data: { display_name: name } }
+      });
+      if (error) { showAuthMsg(error.message, 'error'); btn.textContent = 'CREATE ACCOUNT'; btn.disabled = false; return; }
+      showAuthMsg('Account created! Check your email to confirm, then sign in.', 'success');
+      switchAuthTab('login');
+    } else {
+      const { data, error } = await supabaseClient.auth.signInWithPassword({ email, password });
+      if (error) { showAuthMsg(error.message, 'error'); btn.textContent = 'SIGN IN'; btn.disabled = false; return; }
+      currentUser = data.user;
+      document.getElementById('auth-overlay').style.display = 'none';
+      showCharSelect();
+    }
+  } catch(e) {
+    showAuthMsg('Unexpected error: ' + e.message, 'error');
+    console.error('Auth error:', e);
   }
   btn.disabled = false;
+  btn.textContent = authMode === 'register' ? 'CREATE ACCOUNT' : 'SIGN IN';
 }
 
 function skipAuth() {
@@ -6260,7 +6754,12 @@ async function loadCharacterList() {
 
 
 function resetStateToDefaults() {
-  Object.assign(state.baseStats, {BRW:10,AGI:10,PHY:10,INT:10,WILL:10,CHAR:10,LUCK:10});
+  Object.assign(state.baseStats, {BRW:3,AGI:3,PHY:3,INT:3,WILL:3,CHAR:3,LUCK:10});
+  // Apply default dark theme
+  applyTheme('');
+  document.documentElement.setAttribute('data-theme', '');
+  const thSel = document.getElementById('theme-select');
+  if (thSel) thSel.value = '';
   Object.keys(state.skillPM).forEach(k => state.skillPM[k] = 0);
   state.skillPointHistory = Array.from({length:20}, () => ({}));
   state.lockedLevels = new Set();
@@ -6293,7 +6792,12 @@ function resetStateToDefaults() {
   const hpEl = document.getElementById('disp-hp'); if (hpEl) hpEl.textContent = '0';
   const tmpEl = document.getElementById('disp-temphp'); if (tmpEl) tmpEl.textContent = '0';
   const stEl = document.getElementById('disp-stamina'); if (stEl) stEl.textContent = '0';
-  const cnEl = document.getElementById('char-name-input'); if (cnEl) cnEl.value = '';
+  // Clear banner name
+  const bannerDisplay = document.getElementById('banner-name');
+  const bannerInput   = document.getElementById('banner-name-input');
+  if (bannerDisplay) bannerDisplay.textContent = 'Character Name';
+  if (bannerInput)   bannerInput.value = '';
+  chosenTotem = null; chosenTotem2 = null; totemLocked = false; totemLocked2 = false; totemInstances = [];
   recalc(); initCollapsibleCards();
   localStorage.removeItem('lov_character_autosave');
   localStorage.removeItem('lov_character_autosave_portrait');
@@ -6349,7 +6853,7 @@ async function deleteCharacter(id) {
 async function cloudSaveCharacter() {
   if (!supabaseClient || !currentUser || !currentCharId) return;
   const saveData = buildSaveData();
-  const charName = document.getElementById('char-name-input')?.value || 'Character';
+  const charName = document.getElementById('banner-name-input')?.value?.trim() || document.getElementById('banner-name')?.textContent?.trim() || 'Character';
   const cls      = document.getElementById('sel-class')?.value || '';
   const xp       = parseInt(document.getElementById('inp-xp')?.value) || 0;
   const level    = getLevel(xp);
@@ -6371,7 +6875,6 @@ async function cloudSaveCharacter() {
   } else {
     showSaveBanner('☁ Saved to cloud');
     // Also persist locally
-    autoSaveToLocalStorage();
   }
 }
 
