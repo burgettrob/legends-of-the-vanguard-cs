@@ -1,144 +1,99 @@
 <!DOCTYPE html>
-<!-- LoV Character Sheet v1777814961 -->
+<!-- LoV Character Sheet — Codex Vanguard layout v2 -->
 <html lang="en">
 <head>
 <meta charset="UTF-8">
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+  <meta http-equiv="Pragma" content="no-cache">
+  <meta http-equiv="Expires" content="0">
   <!-- Supabase SDK -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Legends of the Vanguard — Character Sheet</title>
+<title>Legends of the Vanguard — Character Codex</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=Crimson+Pro:ital,wght@0,300;0,400;0,600;1,400&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700&family=Space+Grotesk:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
+/* ═══════════════════════════════════════════════════════════════════════
+   CODEX VANGUARD — bold modern alt-layout for Legends of the Vanguard
+   Sidebar nav · emerald/obsidian palette · sharp angular cards · sticky HUD
+   ═══════════════════════════════════════════════════════════════════════ */
+
 :root {
-  --bg:        #0d0f1a;
-  --bg2:       #13172a;
-  --bg3:       #1a1f38;
-  --bg4:       #222844;
-  --border:    #2a3060;
-  --border2:   #3a4480;
-  --accent:    #5b7fff;
-  --accent2:   #8fa8ff;
-  --gold:      #d4a843;
-  --gold2:     #f0cc6a;
-  --red:       #e05555;
-  --green:     #4caf7d;
-  --teal:      #3dccc7;
-  --purple:    #a87fff;
-  --orange:    #f09050;
-  --text:      #dde3ff;
-  --text2:     #8896cc;
-  --text3:     #5566aa;
-  --brw:       #f1937a;
-  --agi:       #7ec86e;
-  --phy:       #c0c8e8;
-  --int:       #5ba3d9;
-  --will:      #bdd7ee;
-  --char:      #c8a8e0;
-  --luck:      #d4a843;
-  --font-head: 'Cinzel', serif;
-  --font-body: 'Crimson Pro', serif;
+  /* ── Surface palette (obsidian + emerald) ── */
+  --bg:        #07090d;
+  --bg2:       #0c1015;
+  --bg3:       #11161e;
+  --bg4:       #1a2230;
+  --border:    #1f2937;
+  --border2:   #2d3d52;
+
+  /* ── Accent palette (emerald primary, magenta highlight) ── */
+  --accent:    #10d9a0;
+  --accent2:   #5eecbf;
+  --gold:      #10d9a0;       /* re-aliased: many components use --gold for "primary highlight" */
+  --gold2:     #5eecbf;
+  --red:       #ff5470;
+  --green:     #10d9a0;
+  --teal:      #06b6d4;
+  --purple:    #c084fc;
+  --orange:    #ff8c42;
+  --magenta:   #ec4899;
+
+  /* ── Text scale ── */
+  --text:      #e5edf5;
+  --text2:     #8ea0b8;
+  --text3:     #4a5a72;
+
+  /* ── Ability colors (kept distinct per class hooks) ── */
+  --brw:       #ff8c42;
+  --agi:       #10d9a0;
+  --phy:       #c4d4ea;
+  --int:       #06b6d4;
+  --will:      #a5c5ff;
+  --char:      #c084fc;
+  --luck:      #fbbf24;
+
+  /* ── Type ── */
+  --font-head: 'Space Grotesk', system-ui, sans-serif;
+  --font-body: 'Space Grotesk', system-ui, sans-serif;
   --font-mono: 'JetBrains Mono', monospace;
+  --font-display: 'Cinzel', serif;  /* reserved for wordmark only */
 
+  /* ── Sidebar geometry ── */
+  --rail-w: 232px;
+  --rail-w-collapsed: 64px;
+  --hud-h: 88px;
 }
 
-/* ── THEMES ── */
-[data-theme="archer"] {
-  --bg:#0a1512; --bg2:#0f1f1a; --bg3:#162b24; --bg4:#1e382f;
-  --border:#1e4035; --border2:#2a5a4c;
-  --accent:#3dccc7; --accent2:#7de8e4;
-  --gold:#4caf7d; --gold2:#7de8a0;
-  --text:#d4f0e8; --text2:#7ab8a8; --text3:#3a7865;
-}
-[data-theme="cleric"] {
-  --bg:#120d1a; --bg2:#1a1025; --bg3:#221535; --bg4:#2c1c44;
-  --border:#3a2060; --border2:#5a3090;
-  --accent:#c8a8e0; --accent2:#e0ccf8;
-  --gold:#e0c0ff; --gold2:#f0e0ff;
-  --text:#ede0ff; --text2:#9970c0; --text3:#6040a0;
-}
-[data-theme="druid"] {
-  --bg:#0d1208; --bg2:#131a0e; --bg3:#1a2412; --bg4:#222e18;
-  --border:#2a3e1a; --border2:#3a5825;
-  --accent:#7ec86e; --accent2:#a8e898;
-  --gold:#c8e070; --gold2:#e0f090;
-  --text:#dff0c8; --text2:#7aac5a; --text3:#486830;
-}
-[data-theme="pugilist"] {
-  --bg:#140d08; --bg2:#1e1208; --bg3:#28180a; --bg4:#32200e;
-  --border:#502810; --border2:#7a3c18;
-  --accent:#f09050; --accent2:#f8b878;
-  --gold:#f0a840; --gold2:#f8c868;
-  --text:#f8e0c8; --text2:#c07840; --text3:#905030;
-}
-[data-theme="mage"] {
-  --bg:#080e1a; --bg2:#0a1428; --bg3:#0e1c38; --bg4:#122448;
-  --border:#1a2e60; --border2:#2040a0;
-  --accent:#5b7fff; --accent2:#8fa8ff;
-  --gold:#60a8ff; --gold2:#90c8ff;
-  --text:#cce0ff; --text2:#5878b8; --text3:#304880;
-}
-[data-theme="paladin"] {
-  --bg:#120e08; --bg2:#1c1608; --bg3:#281e0c; --bg4:#342810;
-  --border:#503a10; --border2:#805818;
-  --accent:#f0cc6a; --accent2:#f8e098;
-  --gold:#f0c040; --gold2:#f8d870;
-  --text:#f8f0c8; --text2:#c09828; --text3:#907020;
-}
-[data-theme="rogue"] {
-  --bg:#0a0a0e; --bg2:#101018; --bg3:#161620; --bg4:#1c1c28;
-  --border:#28283a; --border2:#383855;
-  --accent:#a87fff; --accent2:#c8a8ff;
-  --gold:#8870e0; --gold2:#b098f8;
-  --text:#e0d8f8; --text2:#6858b0; --text3:#403878;
-}
-[data-theme="shaman"] {
-  --bg:#0a100e; --bg2:#0e1814; --bg3:#14221c; --bg4:#1a2c24;
-  --border:#1e4030; --border2:#2a5a44;
-  --accent:#3dccc7; --accent2:#6ee0dc;
-  --gold:#40c8a0; --gold2:#70e0c0;
-  --text:#c8f0e8; --text2:#3a9880; --text3:#206850;
-}
-[data-theme="sorcerer"] {
-  --bg:#120808; --bg2:#1e0c0c; --bg3:#280f0f; --bg4:#321414;
-  --border:#501818; --border2:#802020;
-  --accent:#e05555; --accent2:#f88080;
-  --gold:#f04040; --gold2:#f87070;
-  --text:#f8d8d8; --text2:#c03030; --text3:#902020;
-}
-[data-theme="warlord"] {
-  --bg:#100808; --bg2:#180e0a; --bg3:#201408; --bg4:#2a1c0e;
-  --border:#4a2010; --border2:#742e18;
-  --accent:#e05555; --accent2:#f09070;
-  --gold:#e06030; --gold2:#f88050;
-  --text:#f8dcc8; --text2:#b04820; --text3:#803018;
-}
-[data-theme="warrior"] {
-  --bg:#0a0e14; --bg2:#0e1620; --bg3:#141e2c; --bg4:#1c2838;
-  --border:#243050; --border2:#304070;
-  --accent:#7890c0; --accent2:#98b0e0;
-  --gold:#a0c0e0; --gold2:#c0d8f0;
-  --text:#d8e8f8; --text2:#5878a8; --text3:#345080;
-}
+/* ── Class themes (rebalanced for the new emerald palette) ── */
+[data-theme="archer"]    { --accent:#10d9a0; --accent2:#5eecbf; --gold:#10d9a0; --gold2:#5eecbf; }
+[data-theme="cleric"]    { --accent:#c084fc; --accent2:#d8b4fe; --gold:#c084fc; --gold2:#d8b4fe; }
+[data-theme="druid"]     { --accent:#84cc16; --accent2:#a3e635; --gold:#84cc16; --gold2:#a3e635; }
+[data-theme="pugilist"]  { --accent:#ff8c42; --accent2:#ffaa6f; --gold:#ff8c42; --gold2:#ffaa6f; }
+[data-theme="mage"]      { --accent:#06b6d4; --accent2:#67e8f9; --gold:#06b6d4; --gold2:#67e8f9; }
+[data-theme="paladin"]   { --accent:#fbbf24; --accent2:#fcd34d; --gold:#fbbf24; --gold2:#fcd34d; }
+[data-theme="rogue"]     { --accent:#a78bfa; --accent2:#c4b5fd; --gold:#a78bfa; --gold2:#c4b5fd; }
+[data-theme="shaman"]    { --accent:#2dd4bf; --accent2:#5eead4; --gold:#2dd4bf; --gold2:#5eead4; }
+[data-theme="sorcerer"]  { --accent:#ff5470; --accent2:#ff8094; --gold:#ff5470; --gold2:#ff8094; }
+[data-theme="warlord"]   { --accent:#ef4444; --accent2:#f87171; --gold:#ef4444; --gold2:#f87171; }
+[data-theme="warrior"]   { --accent:#94a3b8; --accent2:#cbd5e1; --gold:#94a3b8; --gold2:#cbd5e1; }
 [data-theme="grey"] {
-  --bg:#0f0f0f; --bg2:#1a1a1a; --bg3:#222222; --bg4:#2c2c2c;
-  --border:#383838; --border2:#484848;
-  --accent:#888888; --accent2:#aaaaaa;
-  --gold:#aaaaaa; --gold2:#cccccc;
-  --text:#dddddd; --text2:#888888; --text3:#555555;
+  --bg:#0a0a0a; --bg2:#121212; --bg3:#191919; --bg4:#242424;
+  --border:#2a2a2a; --border2:#3a3a3a;
+  --accent:#a3a3a3; --accent2:#d4d4d4; --gold:#a3a3a3; --gold2:#d4d4d4;
+  --text:#e5e5e5; --text2:#a3a3a3; --text3:#525252;
   --brw:#c0c0c0; --agi:#c0c0c0; --phy:#c0c0c0;
   --int:#c0c0c0; --will:#c0c0c0; --char:#c0c0c0; --luck:#c0c0c0;
 }
 [data-theme="light"] {
-  --bg:#f0f2f8; --bg2:#ffffff; --bg3:#e8ecf8; --bg4:#dde3f0;
-  --border:#c0c8e0; --border2:#9aaccc;
-  --accent:#3a5fff; --accent2:#6080e0;
-  --gold:#b07000; --gold2:#d09020;
-  --red:#cc2222; --green:#228844; --teal:#1a9090;
-  --purple:#6633bb; --orange:#cc5500;
-  --text:#1a2040; --text2:#445080; --text3:#8090b8;
-  --brw:#c04020; --agi:#207020; --phy:#404080;
-  --int:#1050a0; --will:#205088; --char:#602090; --luck:#805000;
+  --bg:#f5f7fa; --bg2:#ffffff; --bg3:#eef2f7; --bg4:#dde5ef;
+  --border:#cbd5e1; --border2:#94a3b8;
+  --accent:#0e9f7e; --accent2:#10d9a0; --gold:#0e9f7e; --gold2:#10d9a0;
+  --red:#dc2626; --green:#15803d; --teal:#0891b2;
+  --purple:#7c3aed; --orange:#ea580c;
+  --text:#0f172a; --text2:#475569; --text3:#94a3b8;
+  --brw:#c2410c; --agi:#15803d; --phy:#475569;
+  --int:#0e7490; --will:#1e40af; --char:#7c3aed; --luck:#a16207;
 }
 
 * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -147,90 +102,360 @@ body {
   background: var(--bg);
   color: var(--text);
   font-family: var(--font-body);
-  font-size: 15px;
+  font-size: 14.5px;
   min-height: 100vh;
   overflow-x: hidden;
+  -webkit-font-smoothing: antialiased;
 }
 
-/* background texture */
+/* Ambient background — emerald diagonal grid + soft glows */
 body::before {
   content: '';
   position: fixed;
   inset: 0;
-  background: radial-gradient(ellipse at 20% 20%, rgba(91,127,255,.06) 0%, transparent 60%),
-              radial-gradient(ellipse at 80% 80%, rgba(168,127,255,.05) 0%, transparent 60%);
+  background:
+    radial-gradient(ellipse 800px 600px at 15% 10%, rgba(16,217,160,.05) 0%, transparent 60%),
+    radial-gradient(ellipse 700px 500px at 90% 90%, rgba(236,72,153,.04) 0%, transparent 65%),
+    linear-gradient(135deg, transparent 49.5%, rgba(255,255,255,.012) 49.5% 50.5%, transparent 50.5%) 0 0 / 28px 28px;
   pointer-events: none;
   z-index: 0;
 }
 
-.app { position: relative; z-index: 1; max-width: 1600px; margin: 0 auto; padding: 0 16px 40px; }
-
-/* ── HEADER ── */
-.header {
+/* ═══════════════════════════════════════════════════════════════════════
+   APP SHELL — sidebar + main column
+   ═══════════════════════════════════════════════════════════════════════ */
+.app {
+  position: relative;
+  z-index: 1;
   display: grid;
-  grid-template-columns: 1fr auto 1fr;
-  align-items: center;
-  padding: 20px 0 16px;
+  grid-template-columns: var(--rail-w) 1fr;
+  min-height: 100vh;
+}
+
+/* ── SIDEBAR / RAIL ── */
+.rail {
+  background: linear-gradient(180deg, var(--bg2) 0%, var(--bg) 100%);
+  border-right: 1px solid var(--border);
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  padding: 18px 0;
+}
+.rail-brand {
+  padding: 4px 22px 22px;
   border-bottom: 1px solid var(--border);
-  margin-bottom: 20px;
+  margin-bottom: 14px;
 }
-.header-title {
-  font-family: var(--font-head);
-  font-size: 28px;
-  letter-spacing: .12em;
-  color: var(--gold);
-  text-shadow: 0 0 30px rgba(212,168,67,.4);
-  text-align: center;
-}
-.header-sub { font-size: 12px; color: var(--text3); letter-spacing: .1em; text-align: center; margin-top: 3px; text-transform: uppercase; font-family: var(--font-mono); }
-
-/* ── TABS ── */
-.tabs { display: flex; gap: 4px; margin-bottom: 20px; border-bottom: 1px solid var(--border); padding-bottom: 0; }
-.tab {
-  font-family: var(--font-head);
-  font-size: 11px;
-  letter-spacing: .08em;
-  padding: 8px 20px;
-  background: transparent;
-  border: 1px solid transparent;
-  border-bottom: none;
-  color: var(--text3);
-  cursor: pointer;
-  transition: all .2s;
-  border-radius: 4px 4px 0 0;
-}
-.tab:hover { color: var(--text2); border-color: var(--border); }
-.tab.active { color: var(--gold); border-color: var(--border); background: var(--bg2); border-bottom: 1px solid var(--bg2); margin-bottom: -1px; }
-
-/* ── PANELS ── */
-.panel { display: none; }
-.panel.active { display: block; }
-
-/* ── SECTION CARDS ── */
-.card {
-  background: var(--bg2);
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  overflow: hidden;
-  margin-bottom: 16px;
-}
-.card-header {
-  background: var(--bg3);
-  border-bottom: 1px solid var(--border);
-  padding: 8px 16px;
-  font-family: var(--font-head);
-  font-size: 11px;
-  letter-spacing: .1em;
+.rail-brand-mark {
+  font-family: var(--font-display);
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: .22em;
+  color: var(--accent);
   text-transform: uppercase;
   display: flex;
   align-items: center;
   gap: 8px;
+}
+.rail-brand-mark::before {
+  content: '';
+  width: 6px; height: 18px;
+  background: linear-gradient(180deg, var(--accent), transparent);
+  border-radius: 2px;
+}
+.rail-brand-sub {
+  font-family: var(--font-mono);
+  font-size: 9.5px;
+  letter-spacing: .15em;
+  color: var(--text3);
+  text-transform: uppercase;
+  margin-top: 6px;
+  padding-left: 14px;
+}
+
+.rail-section-label {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  letter-spacing: .18em;
+  color: var(--text3);
+  text-transform: uppercase;
+  padding: 14px 22px 6px;
+}
+
+.rail-nav { display: flex; flex-direction: column; padding: 0 12px; gap: 1px; }
+.nav-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 9px 12px;
+  background: transparent;
+  border: none;
+  border-radius: 6px;
+  color: var(--text2);
+  cursor: pointer;
+  font-family: var(--font-body);
+  font-size: 13px;
+  font-weight: 500;
+  letter-spacing: .01em;
+  text-align: left;
+  transition: all .15s ease;
+  position: relative;
+}
+.nav-item:hover { background: var(--bg3); color: var(--text); }
+.nav-item.active {
+  background: linear-gradient(90deg, rgba(16,217,160,.12), rgba(16,217,160,.02));
+  color: var(--accent);
+}
+.nav-item.active::before {
+  content: '';
+  position: absolute;
+  left: -12px;
+  top: 6px; bottom: 6px;
+  width: 3px;
+  background: var(--accent);
+  border-radius: 0 2px 2px 0;
+  box-shadow: 0 0 12px var(--accent);
+}
+.nav-icon {
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  opacity: .85;
+  pointer-events: none; /* ensures click event.target is always the button */
+}
+.nav-label { flex: 1; pointer-events: none; }
+
+.rail-footer {
+  margin-top: auto;
+  padding: 14px 18px 4px;
+  border-top: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.rail-footer-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+}
+.rail-btn {
+  padding: 7px 10px;
+  background: var(--bg3);
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  color: var(--text2);
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: all .15s;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+}
+.rail-btn:hover { background: var(--bg4); border-color: var(--border2); color: var(--text); }
+.rail-btn.primary { border-color: var(--accent); color: var(--accent); }
+.rail-btn.primary:hover { background: var(--accent); color: var(--bg); }
+.rail-btn.cloud { border-color: rgba(6,182,212,.4); color: var(--teal); }
+.rail-btn.cloud:hover { background: var(--teal); color: var(--bg); }
+.rail-btn.wide { grid-column: span 2; }
+
+.rail-theme {
+  width: 100%;
+  background: var(--bg3);
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  color: var(--text2);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  padding: 7px 10px;
+  cursor: pointer;
+}
+
+/* ── MAIN COLUMN ── */
+.main {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+/* ── STICKY HUD ── */
+.hud {
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  background: linear-gradient(180deg, rgba(7,9,13,.96) 0%, rgba(7,9,13,.88) 100%);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border-bottom: 1px solid var(--border);
+  padding: 16px 28px;
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  flex-wrap: wrap;
+}
+.hud-identity {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  min-width: 0;
+  flex: 1;
+}
+.hud-portrait {
+  width: 52px; height: 52px;
+  border-radius: 8px;
+  background: var(--bg3);
+  border: 1px solid var(--border2);
+  overflow: hidden;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 22px;
+  color: var(--text3);
+}
+.hud-portrait img { width: 100%; height: 100%; object-fit: cover; }
+.hud-name-block { min-width: 0; }
+.hud-name {
+  font-family: var(--font-head);
+  font-size: 19px;
+  font-weight: 600;
+  color: var(--text);
+  letter-spacing: -0.01em;
+  line-height: 1.2;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 320px;
+}
+.hud-sub {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: .08em;
+  color: var(--text3);
+  text-transform: uppercase;
+  margin-top: 2px;
+}
+
+.hud-stats {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.hud-stat {
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 7px 12px;
+  min-width: 70px;
+  text-align: center;
+  position: relative;
+}
+.hud-stat-label {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  letter-spacing: .12em;
+  color: var(--text3);
+  text-transform: uppercase;
+  margin-bottom: 2px;
+}
+.hud-stat-val {
+  font-family: var(--font-head);
+  font-size: 18px;
+  font-weight: 700;
+  line-height: 1;
+}
+.hud-stat.hp .hud-stat-val { color: var(--red); }
+.hud-stat.lv .hud-stat-val { color: var(--accent); }
+.hud-stat.xp .hud-stat-val { color: var(--text); }
+
+.hud-rest-btn {
+  padding: 10px 16px;
+  background: transparent;
+  border: 1px solid var(--teal);
+  border-radius: 6px;
+  color: var(--teal);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: all .15s;
+  white-space: nowrap;
+}
+.hud-rest-btn:hover { background: var(--teal); color: var(--bg); box-shadow: 0 0 20px rgba(6,182,212,.3); }
+
+/* ── CONTENT ── */
+.content {
+  padding: 24px 28px 60px;
+  flex: 1;
+  min-width: 0;
+}
+
+/* ── PANELS ── */
+.panel { display: none; }
+.panel.active { display: block; animation: panel-in .2s ease; }
+@keyframes panel-in {
+  from { opacity: 0; transform: translateY(4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════
+   CARDS — sharper, angular, faint inner glow
+   ═══════════════════════════════════════════════════════════════════════ */
+.card {
+  background: linear-gradient(180deg, var(--bg2) 0%, rgba(12,16,21,.7) 100%);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  overflow: hidden;
+  margin-bottom: 16px;
+  position: relative;
+  box-shadow: 0 1px 0 rgba(255,255,255,.02) inset, 0 4px 24px -8px rgba(0,0,0,.4);
+}
+.card::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(16,217,160,.3), transparent);
+  opacity: 0;
+  transition: opacity .3s;
+}
+.card:hover::before { opacity: 1; }
+
+.card-header {
+  background: linear-gradient(90deg, var(--bg3), rgba(17,22,30,.4));
+  border-bottom: 1px solid var(--border);
+  padding: 10px 16px;
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  font-weight: 500;
+  letter-spacing: .14em;
+  text-transform: uppercase;
+  color: var(--text2);
+  display: flex;
+  align-items: center;
+  gap: 10px;
   cursor: pointer;
   user-select: none;
   transition: background .15s;
 }
-.card-header:hover { background: var(--bg4); }
-.card-header .dot { width: 6px; height: 6px; border-radius: 50%; flex-shrink:0; }
+.card-header:hover { background: var(--bg3); color: var(--text); }
+.card-header .dot {
+  width: 6px; height: 6px; border-radius: 50%;
+  flex-shrink: 0;
+  box-shadow: 0 0 10px currentColor;
+}
 .card-header .collapse-arrow {
   margin-left: auto;
   font-size: 10px;
@@ -241,53 +466,88 @@ body::before {
 .card.collapsed .collapse-arrow { transform: rotate(-90deg); }
 .card.collapsed .card-body { display: none; }
 .card.collapsed .card-header { border-bottom: none; }
-.card-body { padding: 14px 16px; }
+.card-body { padding: 16px; }
 
-/* ── GRID LAYOUTS ── */
+/* ═══════════════════════════════════════════════════════════════════════
+   GRID LAYOUTS
+   ═══════════════════════════════════════════════════════════════════════ */
 .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
 .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; }
 .grid-4 { display: grid; grid-template-columns: repeat(4,1fr); gap: 12px; }
 .grid-auto { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px,1fr)); gap: 10px; }
 
-/* ── VITAL STRIP ── */
+/* ═══════════════════════════════════════════════════════════════════════
+   VITAL STRIP — restyled into sharper console cells
+   ═══════════════════════════════════════════════════════════════════════ */
 .vitals-strip {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(90px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(96px, 1fr));
   gap: 8px;
-  margin-bottom: 16px;
+  margin-bottom: 18px;
 }
 .vital-adj-btn {
-  width: 20px; height: 20px; border-radius: 3px;
-  border: 1px solid var(--border); background: var(--bg4);
-  color: var(--text2); font-size: 14px; cursor: pointer;
-  display: inline-flex; align-items: center; justify-content: center;
-  line-height: 1; transition: all .15s; padding: 0;
-}
-.vital-adj-btn:hover { background: var(--teal); border-color: var(--teal); color: white; }
-.vital-box {
+  width: 22px; height: 22px;
+  border-radius: 4px;
+  border: 1px solid var(--border2);
   background: var(--bg3);
-  border: 1px solid var(--border);
-  border-radius: 6px;
-  padding: 8px 10px;
-  text-align: center;
+  color: var(--text2);
+  font-size: 14px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+  transition: all .15s;
+  padding: 0;
+  font-family: var(--font-mono);
 }
-.vital-box .v-label { font-size: 10px; color: var(--text3); font-family: var(--font-mono); letter-spacing: .06em; margin-bottom: 4px; }
-.vital-box .v-value { font-size: 20px; font-weight: 600; font-family: var(--font-head); line-height: 1; }
+.vital-adj-btn:hover { background: var(--accent); border-color: var(--accent); color: var(--bg); }
+.vital-box {
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 10px 12px;
+  text-align: center;
+  position: relative;
+  transition: border-color .15s;
+}
+.vital-box:hover { border-color: var(--border2); }
+.vital-box .v-label {
+  font-size: 9.5px;
+  color: var(--text3);
+  font-family: var(--font-mono);
+  letter-spacing: .14em;
+  text-transform: uppercase;
+  margin-bottom: 6px;
+}
+.vital-box .v-value {
+  font-size: 22px;
+  font-weight: 700;
+  font-family: var(--font-head);
+  line-height: 1;
+  color: var(--text);
+}
 .vital-box.hp .v-value  { color: var(--red); }
-.vital-box.xp .v-value  { color: var(--green); }
-.vital-box.lvl .v-value { color: var(--gold); }
+.vital-box.xp .v-value  { color: var(--accent); }
+.vital-box.lvl .v-value { color: var(--accent); }
 
-/* ── IDENTITY ROW ── */
+/* ═══════════════════════════════════════════════════════════════════════
+   IDENTITY & FIELDS
+   ═══════════════════════════════════════════════════════════════════════ */
 .identity-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
   gap: 10px;
   margin-bottom: 16px;
 }
-
-/* ── INPUT FIELDS ── */
-.field { display: flex; flex-direction: column; gap: 4px; }
-.field label { font-size: 10px; color: var(--text3); font-family: var(--font-mono); letter-spacing: .06em; text-transform: uppercase; }
+.field { display: flex; flex-direction: column; gap: 5px; }
+.field label {
+  font-size: 9.5px;
+  color: var(--text3);
+  font-family: var(--font-mono);
+  letter-spacing: .12em;
+  text-transform: uppercase;
+}
 .field input, .field select, .field textarea {
   background: var(--bg3);
   border: 1px solid var(--border);
@@ -295,346 +555,460 @@ body::before {
   color: var(--text);
   font-family: var(--font-body);
   font-size: 14px;
-  padding: 6px 10px;
-  transition: border-color .2s;
+  padding: 7px 10px;
+  transition: all .15s;
   width: 100%;
 }
 .field input:focus, .field select:focus, .field textarea:focus {
   outline: none;
   border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(16,217,160,.1);
 }
 .field select { cursor: pointer; }
-select option { background: var(--bg3); }
-.field textarea { resize: vertical; min-height: 80px; }
+select option { background: var(--bg3); color: var(--text); }
+.field textarea { resize: vertical; min-height: 80px; line-height: 1.55; }
 
-/* ── SKILL TABLE ── */
+/* ═══════════════════════════════════════════════════════════════════════
+   SKILL TABLE
+   ═══════════════════════════════════════════════════════════════════════ */
 .skill-table { width: 100%; border-collapse: collapse; }
 .skill-table th {
-  font-size: 10px; font-family: var(--font-mono); color: var(--text3);
-  text-align: left; padding: 4px 8px; border-bottom: 1px solid var(--border);
-  letter-spacing: .05em;
+  font-size: 9.5px;
+  font-family: var(--font-mono);
+  color: var(--text3);
+  text-align: left;
+  padding: 6px 8px;
+  border-bottom: 1px solid var(--border);
+  letter-spacing: .12em;
+  text-transform: uppercase;
 }
-.skill-table td { padding: 4px 8px; border-bottom: 1px solid rgba(42,48,96,.4); font-size: 13px; }
+.skill-table td {
+  padding: 5px 8px;
+  border-bottom: 1px solid rgba(31,41,55,.5);
+  font-size: 13px;
+}
 .skill-table tr:last-child td { border-bottom: none; }
-.skill-table tr:hover td { background: rgba(91,127,255,.04); }
+.skill-table tr:hover td { background: rgba(16,217,160,.04); }
 .skill-name { color: var(--text2); font-size: 13px; }
 .skill-bonus { font-family: var(--font-mono); font-size: 13px; font-weight: 500; text-align: right; }
 .skill-bonus.neg { color: var(--red); }
-.skill-bonus.pos { color: var(--green); }
+.skill-bonus.pos { color: var(--accent); }
 .skill-bonus.zero { color: var(--text3); }
 .skill-pm input {
-  width: 52px; background: var(--bg4); border: 1px solid var(--border);
+  width: 56px; background: var(--bg3); border: 1px solid var(--border);
   border-radius: 3px; color: var(--text); font-family: var(--font-mono);
-  font-size: 12px; padding: 2px 6px; text-align: center;
+  font-size: 12px; padding: 3px 6px; text-align: center;
 }
 .skill-lvl-btn {
-  width: 20px; height: 20px; border-radius: 3px; border: 1px solid var(--border);
-  background: var(--bg4); color: var(--text3); font-size: 13px; cursor: pointer;
+  width: 22px; height: 22px; border-radius: 3px;
+  border: 1px solid var(--border); background: var(--bg3);
+  color: var(--text3); font-size: 13px; cursor: pointer;
   display: inline-flex; align-items: center; justify-content: center;
   line-height: 1; transition: all .15s; padding: 0; vertical-align: middle;
 }
-.skill-lvl-btn:hover:not(:disabled) { background: var(--teal); border-color: var(--teal); color: white; }
+.skill-lvl-btn:hover:not(:disabled) { background: var(--accent); border-color: var(--accent); color: var(--bg); }
 .skill-lvl-btn:disabled { opacity: 0.3; cursor: not-allowed; }
 .skill-lvl-total {
-  font-size: 11px; font-family: var(--font-mono); color: var(--teal);
-  min-width: 16px; text-align: center; display: inline-block; vertical-align: middle;
+  font-size: 11px; font-family: var(--font-mono); color: var(--accent);
+  min-width: 18px; text-align: center; display: inline-block; vertical-align: middle;
 }
 
-/* ── ABILITY SCORES ── */
+/* ═══════════════════════════════════════════════════════════════════════
+   ABILITY SCORES — hexagonal feel via clip-path corners
+   ═══════════════════════════════════════════════════════════════════════ */
 .ability-grid { display: grid; grid-template-columns: repeat(7,1fr); gap: 8px; }
-@media(max-width:900px){ .ability-grid { grid-template-columns: repeat(4,1fr); } }
+@media(max-width:1100px){ .ability-grid { grid-template-columns: repeat(4,1fr); } }
 .ability-box {
-  background: var(--bg3);
+  background: linear-gradient(180deg, var(--bg2), var(--bg));
   border: 1px solid var(--border);
-  border-radius: 6px;
-  padding: 10px 8px;
+  border-radius: 4px;
+  padding: 12px 8px 10px;
   text-align: center;
   position: relative;
+  transition: all .2s;
 }
-.ability-box .a-name { font-size: 10px; font-family: var(--font-mono); letter-spacing: .05em; margin-bottom: 6px; }
-.ability-box .a-score { font-size: 16px; font-weight: 600; font-family: var(--font-head); line-height: 1; color: var(--text2); }
-.ability-box .a-mod { font-size: 28px; font-weight: 700; font-family: var(--font-head); line-height: 1; margin-bottom: 2px; }
+.ability-box:hover { border-color: var(--accent); box-shadow: 0 0 20px -8px var(--accent); }
+.ability-box .a-name {
+  font-size: 9.5px;
+  font-family: var(--font-mono);
+  letter-spacing: .14em;
+  text-transform: uppercase;
+  margin-bottom: 8px;
+  color: var(--text3);
+}
+.ability-box .a-score {
+  font-size: 15px;
+  font-weight: 600;
+  font-family: var(--font-mono);
+  line-height: 1;
+  color: var(--text2);
+}
+.ability-box .a-mod {
+  font-size: 30px;
+  font-weight: 700;
+  font-family: var(--font-head);
+  line-height: 1;
+  margin-bottom: 4px;
+  letter-spacing: -0.02em;
+}
 .ability-box .a-mod.neg { color: var(--red); }
-.ability-box .a-mod.pos { color: var(--green); }
+.ability-box .a-mod.pos { color: var(--accent); }
 .ability-box .a-mod.zero { color: var(--text3); }
-.ability-box .a-buffed { font-size: 10px; color: var(--text3); margin-top: 2px; margin-bottom: 2px; }
-.ability-btn-row { display: flex; justify-content: center; gap: 4px; margin-top: 6px; }
+.ability-box .a-buffed { font-size: 10px; color: var(--text3); margin-top: 4px; margin-bottom: 2px; font-family: var(--font-mono); }
+.ability-btn-row { display: flex; justify-content: center; gap: 4px; margin-top: 8px; }
 .ab-btn {
-  width: 20px; height: 20px; border-radius: 3px; border: 1px solid var(--border);
-  background: var(--bg4); color: var(--text2); font-size: 14px; cursor: pointer;
+  width: 22px; height: 22px; border-radius: 3px;
+  border: 1px solid var(--border); background: var(--bg3);
+  color: var(--text2); font-size: 14px; cursor: pointer;
   display: flex; align-items: center; justify-content: center; line-height: 1;
   transition: all .15s;
 }
-.ab-btn:hover { background: var(--accent); border-color: var(--accent); color: white; }
+.ab-btn:hover { background: var(--accent); border-color: var(--accent); color: var(--bg); }
 
-/* ── RESISTANCES ── */
-.resist-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(100px,1fr)); gap: 6px; }
+/* ═══════════════════════════════════════════════════════════════════════
+   RESISTANCES
+   ═══════════════════════════════════════════════════════════════════════ */
+.resist-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(110px,1fr)); gap: 6px; }
 .resist-box {
-  background: var(--bg3);
-  border: 1px solid var(--border);
-  border-radius: 4px;
-  padding: 6px 8px;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-.resist-name { font-size: 11px; color: var(--text2); }
-.resist-val { font-family: var(--font-mono); font-size: 12px; font-weight: 500; color: var(--text3); }
-.resist-val.has-val { color: var(--teal); }
-
-/* ── COMBAT STATS ── */
-.combat-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px,1fr)); gap: 8px; }
-.stat-row {
-  background: var(--bg3);
+  background: var(--bg2);
   border: 1px solid var(--border);
   border-radius: 4px;
   padding: 7px 10px;
   display: flex;
   justify-content: space-between;
   align-items: center;
+  transition: border-color .15s;
 }
-.stat-label { font-size: 11px; color: var(--text3); font-family: var(--font-mono); }
-.stat-value { font-size: 14px; font-weight: 500; color: var(--text); font-family: var(--font-mono); }
+.resist-box:hover { border-color: var(--border2); }
+.resist-name { font-size: 11px; color: var(--text2); }
+.resist-val { font-family: var(--font-mono); font-size: 12px; font-weight: 500; color: var(--text3); }
+.resist-val.has-val { color: var(--accent); }
 
-/* ── DEATH SAVES ── */
-.death-saves { display: flex; gap: 16px; align-items: center; }
+/* ═══════════════════════════════════════════════════════════════════════
+   COMBAT STATS
+   ═══════════════════════════════════════════════════════════════════════ */
+.combat-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px,1fr)); gap: 8px; }
+.stat-row {
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 8px 12px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  transition: border-color .15s;
+}
+.stat-row:hover { border-color: var(--border2); }
+.stat-label { font-size: 10.5px; color: var(--text3); font-family: var(--font-mono); letter-spacing: .08em; text-transform: uppercase; }
+.stat-value { font-size: 15px; font-weight: 600; color: var(--text); font-family: var(--font-mono); }
+
+/* ═══════════════════════════════════════════════════════════════════════
+   DEATH SAVES & SECONDARY PIPS
+   ═══════════════════════════════════════════════════════════════════════ */
+.death-saves { display: flex; gap: 18px; align-items: center; flex-wrap: wrap; }
 .ds-row { display: flex; align-items: center; gap: 8px; }
-.ds-label { font-size: 12px; color: var(--text3); min-width: 70px; font-family: var(--font-mono); }
+.ds-label { font-size: 11px; color: var(--text3); min-width: 72px; font-family: var(--font-mono); letter-spacing: .08em; text-transform: uppercase; }
 .ds-pip {
   width: 18px; height: 18px; border-radius: 50%;
   border: 1.5px solid var(--border2); background: var(--bg3);
   cursor: pointer; transition: all .15s;
 }
-.ds-pip.success.filled { background: var(--green); border-color: var(--green); }
-.ds-pip.failure.filled { background: var(--red); border-color: var(--red); }
+.ds-pip.success.filled { background: var(--accent); border-color: var(--accent); box-shadow: 0 0 8px var(--accent); }
+.ds-pip.failure.filled { background: var(--red); border-color: var(--red); box-shadow: 0 0 8px var(--red); }
 .sec-pip {
   width: 22px; height: 22px; border-radius: 50%;
-  border: 2px solid; background: var(--bg4);
+  border: 2px solid; background: var(--bg3);
   cursor: pointer; transition: all .2s;
   display: inline-flex; align-items: center; justify-content: center;
   font-size: 11px; user-select: none;
 }
-.sec-pip.chi-pip       { border-color: #7ec86e; color: #7ec86e; }
-.sec-pip.chi-pip.used  { background: #7ec86e; color: var(--bg); }
-.sec-pip.strand-pip    { border-color: #c8a8e0; color: #c8a8e0; }
-.sec-pip.strand-pip.used { background: #c8a8e0; color: var(--bg); }
-.sec-pip.blood-pip     { border-color: #e05555; color: #e05555; }
-.sec-pip.blood-pip.used { background: #e05555; color: white; }
-.sec-pip.combo-pip     { border-color: #f09050; color: #f09050; border-radius: 4px; font-size: 14px; width: 26px; height: 26px; }
-.sec-pip.combo-pip.used { background: #f09050; color: var(--bg); }
-.sec-pip.skeleton-pip  { border-color: #bdd7ee; color: #bdd7ee; border-radius: 4px; font-size: 16px; width: 26px; height: 26px; }
-.sec-pip.skeleton-pip.used { background: #bdd7ee; color: var(--bg); }
-.sec-pip.soul-pip      { border-color: #c8a8e0; color: #c8a8e0; border-radius: 50%; font-size: 14px; width: 26px; height: 26px; }
-.sec-pip.soul-pip.used { background: #c8a8e0; color: var(--bg); }
-.sec-pip.fury-pip      { border-color: #f09050; color: #f09050; border-radius: 4px; font-size: 16px; width: 26px; height: 26px; }
-.sec-pip.fury-pip.used { background: #f09050; color: var(--bg); }
-.sec-pip.warlord-fury-pip      { border-color: #e05555; color: #e05555; border-radius: 4px; font-size: 18px; width: 28px; height: 28px; border-width: 2px; }
-.sec-pip.warlord-fury-pip.used { background: rgba(224,85,85,.2); color: #ff8060; box-shadow: 0 0 8px rgba(224,85,85,.5); }
-.sec-pip.druid-ap-pip      { border-color: #7ec86e; color: #7ec86e; border-radius: 50%; font-size: 16px; width: 28px; height: 28px; border-width: 2px; }
-.sec-pip.druid-ap-pip.used { background: rgba(126,200,110,.2); color: #a0e090; box-shadow: 0 0 8px rgba(126,200,110,.4); }
+.sec-pip.chi-pip       { border-color: #10d9a0; color: #10d9a0; }
+.sec-pip.chi-pip.used  { background: #10d9a0; color: var(--bg); }
+.sec-pip.strand-pip    { border-color: #c084fc; color: #c084fc; }
+.sec-pip.strand-pip.used { background: #c084fc; color: var(--bg); }
+.sec-pip.blood-pip     { border-color: #ff5470; color: #ff5470; }
+.sec-pip.blood-pip.used { background: #ff5470; color: white; }
+.sec-pip.combo-pip     { border-color: #ff8c42; color: #ff8c42; border-radius: 4px; font-size: 14px; width: 26px; height: 26px; }
+.sec-pip.combo-pip.used { background: #ff8c42; color: var(--bg); }
+.sec-pip.skeleton-pip  { border-color: #a5c5ff; color: #a5c5ff; border-radius: 4px; font-size: 16px; width: 26px; height: 26px; }
+.sec-pip.skeleton-pip.used { background: #a5c5ff; color: var(--bg); }
+.sec-pip.soul-pip      { border-color: #c084fc; color: #c084fc; border-radius: 50%; font-size: 14px; width: 26px; height: 26px; }
+.sec-pip.soul-pip.used { background: #c084fc; color: var(--bg); }
+.sec-pip.fury-pip      { border-color: #ff8c42; color: #ff8c42; border-radius: 4px; font-size: 16px; width: 26px; height: 26px; }
+.sec-pip.fury-pip.used { background: #ff8c42; color: var(--bg); }
+.sec-pip.warlord-fury-pip      { border-color: #ef4444; color: #ef4444; border-radius: 4px; font-size: 18px; width: 28px; height: 28px; border-width: 2px; }
+.sec-pip.warlord-fury-pip.used { background: rgba(239,68,68,.2); color: #fca5a5; box-shadow: 0 0 12px rgba(239,68,68,.5); }
+.sec-pip.druid-ap-pip      { border-color: #84cc16; color: #84cc16; border-radius: 50%; font-size: 16px; width: 28px; height: 28px; border-width: 2px; }
+.sec-pip.druid-ap-pip.used { background: rgba(132,204,22,.2); color: #bef264; box-shadow: 0 0 12px rgba(132,204,22,.4); }
 
-/* ── CURRENCY ── */
+/* ═══════════════════════════════════════════════════════════════════════
+   CURRENCY
+   ═══════════════════════════════════════════════════════════════════════ */
 .coin-grid { display: grid; grid-template-columns: repeat(4,1fr); gap: 10px; }
 .coin-box {
-  background: var(--bg3);
+  background: var(--bg2);
   border: 1px solid var(--border);
-  border-radius: 6px;
+  border-radius: 4px;
   padding: 10px;
   text-align: center;
 }
-.coin-label { font-size: 10px; font-family: var(--font-mono); color: var(--gold); letter-spacing: .06em; margin-bottom: 6px; }
-.coin-val { font-size: 20px; font-family: var(--font-head); color: var(--text); }
+.coin-label { font-size: 9.5px; font-family: var(--font-mono); color: var(--accent); letter-spacing: .14em; text-transform: uppercase; margin-bottom: 6px; }
+.coin-val { font-size: 20px; font-family: var(--font-head); font-weight: 600; color: var(--text); }
 .coin-input { width: 100%; margin-top: 6px; }
 .coin-input input { text-align: center; font-family: var(--font-mono); font-size: 13px; }
 
-/* ── BELT SLOTS ── */
+/* ═══════════════════════════════════════════════════════════════════════
+   BELT SLOTS
+   ═══════════════════════════════════════════════════════════════════════ */
 .belt-grid { display: grid; grid-template-columns: repeat(5,1fr); gap: 8px; }
 .belt-slot {
-  background: var(--bg3);
+  background: var(--bg2);
   border: 1px solid var(--border);
-  border-radius: 6px;
+  border-radius: 4px;
   padding: 8px;
-  min-height: 72px;
+  min-height: 74px;
 }
-.belt-slot-num { font-size: 10px; color: var(--text3); font-family: var(--font-mono); margin-bottom: 4px; }
+.belt-slot-num { font-size: 9.5px; color: var(--text3); font-family: var(--font-mono); letter-spacing: .1em; margin-bottom: 5px; }
 .belt-slot input { font-size: 12px; }
 
-/* ── PROFESSIONS ── */
+/* ═══════════════════════════════════════════════════════════════════════
+   PROFESSIONS
+   ═══════════════════════════════════════════════════════════════════════ */
 .prof-table { width: 100%; border-collapse: collapse; }
-.prof-table th { font-size: 10px; color: var(--text3); font-family: var(--font-mono); padding: 4px 8px; border-bottom: 1px solid var(--border); text-align: left; }
-.prof-table td { padding: 6px 8px; border-bottom: 1px solid rgba(42,48,96,.3); }
+.prof-table th { font-size: 9.5px; color: var(--text3); font-family: var(--font-mono); padding: 5px 8px; border-bottom: 1px solid var(--border); text-align: left; letter-spacing: .12em; text-transform: uppercase; }
+.prof-table td { padding: 7px 8px; border-bottom: 1px solid rgba(31,41,55,.4); }
 .prof-table tr:last-child td { border-bottom: none; }
-.prof-name { color: var(--gold); font-size: 13px; font-weight: 600; }
-.prof-roll { font-family: var(--font-mono); color: var(--green); }
+.prof-name { color: var(--accent); font-size: 13px; font-weight: 600; }
+.prof-roll { font-family: var(--font-mono); color: var(--accent); }
 
-/* ── TEXT BLOCKS ── */
+/* ═══════════════════════════════════════════════════════════════════════
+   TEXT BLOCKS
+   ═══════════════════════════════════════════════════════════════════════ */
 .text-block {
-  background: var(--bg3);
+  background: var(--bg2);
   border: 1px solid var(--border);
-  border-radius: 6px;
-  padding: 12px 14px;
+  border-radius: 4px;
+  padding: 14px 16px;
   font-size: 13px;
   line-height: 1.7;
   color: var(--text2);
   min-height: 80px;
   white-space: pre-wrap;
 }
-.text-block .bullet { color: var(--accent2); margin-right: 4px; }
+.text-block .bullet { color: var(--accent); margin-right: 4px; }
 
-/* ── SPELLS ── */
-.spell-section { margin-bottom: 16px; }
+/* ═══════════════════════════════════════════════════════════════════════
+   SPELLS
+   ═══════════════════════════════════════════════════════════════════════ */
+.spell-section { margin-bottom: 18px; }
 .spell-section-header {
   display: flex;
   align-items: center;
   gap: 10px;
-  padding: 6px 0;
+  padding: 8px 0;
   border-bottom: 1px solid var(--border);
-  margin-bottom: 8px;
-  font-family: var(--font-head);
-  font-size: 12px;
-  letter-spacing: .08em;
-  color: var(--gold);
+  margin-bottom: 10px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: .14em;
+  text-transform: uppercase;
+  color: var(--accent);
 }
 .spell-row {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  padding: 7px 10px;
+  border-radius: 4px;
+  margin-bottom: 4px;
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  transition: border-color .15s;
+}
+.spell-row:hover { border-color: var(--border2); }
+.spell-row:nth-child(even) { background: var(--bg3); }
+.spell-row-top {
   display: grid;
-  grid-template-columns: 1fr 80px repeat(6, 28px);
+  grid-template-columns: 160px 1fr 95px 90px 70px 70px repeat(6, 26px);
   gap: 4px;
   align-items: center;
-  padding: 4px 8px;
-  border-radius: 4px;
-  margin-bottom: 3px;
-  background: var(--bg3);
-  border: 1px solid var(--border);
 }
-.spell-row:nth-child(even) { background: var(--bg4); }
 .spell-name-in { font-size: 13px; }
+.spell-desc-in { font-size: 12px; }
 .spell-dmg-in { font-size: 12px; text-align: center; }
-.rank-cb { width: 20px; height: 20px; border-radius: 3px; border: 1px solid var(--border2); background: var(--bg); appearance: none; cursor: pointer; display: flex; align-items: center; justify-content: center; }
-.rank-cb:checked { background: var(--teal); border-color: var(--teal); }
-.rank-cb:checked::after { content: '✦'; color: white; font-size: 10px; }
-.rank-header { display: grid; grid-template-columns: 1fr 80px repeat(6, 28px); gap: 4px; padding: 3px 8px; margin-bottom: 4px; }
-.rank-header span { font-size: 10px; color: var(--text3); font-family: var(--font-mono); text-align: center; }
+.spell-action-in { font-size: 11px; }
+.spell-range-in { font-size: 12px; }
+.spell-scaling-in { font-size: 11px; }
+/* Dmg field gets a subtle distinguishing style when it's being auto-computed. */
+.spell-dmg-in.auto-scaled {
+  background: rgba(16,217,160,.08) !important;
+  border-color: rgba(16,217,160,.3) !important;
+  color: var(--accent) !important;
+  font-weight: 500;
+  cursor: not-allowed;
+}
+.spell-rank-group { display: contents; }
+.rank-cb {
+  width: 20px; height: 20px; border-radius: 3px;
+  border: 1px solid var(--border2); background: var(--bg);
+  appearance: none; cursor: pointer; flex-shrink: 0;
+  margin: 0 auto; display: block;
+  transition: all .15s;
+}
+.rank-cb:checked { background: var(--accent); border-color: var(--accent); box-shadow: 0 0 8px var(--accent); }
+.rank-cb:checked::after { content: '✦'; color: var(--bg); font-size: 9px; display:block; text-align:center; line-height:20px; font-weight:700; }
+.rank-header {
+  display: grid; grid-template-columns: 160px 1fr 95px 90px 70px 70px repeat(6, 26px);
+  gap: 4px; padding: 3px 10px; margin-bottom: 4px;
+}
+.rank-header span { font-size: 9.5px; color: var(--text3); font-family: var(--font-mono); text-align: center; letter-spacing: .1em; text-transform: uppercase; }
 .rank-header span:first-child { text-align: left; }
-.rank-header span:nth-child(2) { text-align: center; }
+.rank-header span:nth-child(2) { text-align: left; }
 
-/* ── AILMENTS ── */
-.ailment-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px,1fr)); gap: 8px; }
+/* ═══════════════════════════════════════════════════════════════════════
+   AILMENTS
+   ═══════════════════════════════════════════════════════════════════════ */
+.ailment-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px,1fr)); gap: 8px; }
 .ailment-box {
-  background: var(--bg3);
+  background: var(--bg2);
   border: 1px solid var(--border);
-  border-radius: 6px;
-  padding: 10px;
+  border-radius: 4px;
+  padding: 10px 12px;
 }
-.ailment-name { font-size: 12px; font-weight: 600; color: var(--text2); margin-bottom: 6px; }
+.ailment-name { font-size: 12px; font-weight: 600; color: var(--text2); margin-bottom: 8px; }
 .ailment-stacks { display: flex; gap: 6px; }
-.stack-cb {
-  display: flex; flex-direction: column; align-items: center; gap: 2px;
-}
+.stack-cb { display: flex; flex-direction: column; align-items: center; gap: 3px; }
 .stack-cb label { font-size: 9px; color: var(--text3); font-family: var(--font-mono); }
-.stack-cb input[type=checkbox] {
-  width: 18px; height: 18px; accent-color: var(--red);
-  border-radius: 3px; cursor: pointer;
-}
+.stack-cb input[type=checkbox] { width: 18px; height: 18px; accent-color: var(--red); border-radius: 3px; cursor: pointer; }
 
-/* ── INVENTORY ── */
+/* ═══════════════════════════════════════════════════════════════════════
+   INVENTORY
+   ═══════════════════════════════════════════════════════════════════════ */
 .inv-table { width: 100%; border-collapse: collapse; font-size: 13px; }
-.inv-table th { font-size: 10px; color: var(--text3); font-family: var(--font-mono); padding: 5px 8px; border-bottom: 1px solid var(--border); text-align: left; white-space: nowrap; }
-.inv-table td { padding: 5px 6px; border-bottom: 1px solid rgba(42,48,96,.3); }
-.inv-table td input { background: transparent; border: none; color: var(--text); font-family: var(--font-body); font-size: 13px; width: 100%; padding: 1px 2px; }
-.inv-table td input:focus { outline: none; background: var(--bg4); border-radius: 2px; }
+.inv-table th { font-size: 9.5px; color: var(--text3); font-family: var(--font-mono); padding: 6px 8px; border-bottom: 1px solid var(--border); text-align: left; white-space: nowrap; letter-spacing: .12em; text-transform: uppercase; }
+.inv-table td { padding: 6px 8px; border-bottom: 1px solid rgba(31,41,55,.4); }
+.inv-table td input { background: transparent; border: none; color: var(--text); font-family: var(--font-body); font-size: 13px; width: 100%; padding: 2px 4px; }
+.inv-table td input:focus { outline: none; background: var(--bg3); border-radius: 3px; }
 .inv-table tr:last-child td { border-bottom: none; }
-.inv-table tr:hover td { background: rgba(91,127,255,.04); }
+.inv-table tr:hover td { background: rgba(16,217,160,.04); }
 .inv-table td input[type=number] { font-family: var(--font-mono); text-align: center; width: 60px; }
 
-/* ── ACTIVE AILMENTS DISPLAY ── */
+/* Active ailments */
 .active-ailments { min-height: 60px; }
 .ailment-tag {
   display: inline-flex;
   align-items: center;
   gap: 5px;
-  background: rgba(224,85,85,.15);
-  border: 1px solid rgba(224,85,85,.3);
+  background: rgba(255,84,112,.12);
+  border: 1px solid rgba(255,84,112,.3);
   border-radius: 20px;
-  padding: 3px 10px;
+  padding: 4px 12px;
   font-size: 12px;
   color: var(--red);
   margin: 3px;
   font-family: var(--font-mono);
 }
 
-/* ── XP BAR ── */
-.xp-bar-wrap { margin: 10px 0; }
-.xp-bar-bg { height: 6px; background: var(--bg4); border-radius: 3px; overflow: hidden; }
-.xp-bar-fill { height: 100%; background: linear-gradient(90deg, var(--accent), var(--teal)); border-radius: 3px; transition: width .4s; }
-.xp-label { display: flex; justify-content: space-between; font-size: 11px; color: var(--text3); font-family: var(--font-mono); margin-top: 4px; }
+/* ═══════════════════════════════════════════════════════════════════════
+   XP BAR
+   ═══════════════════════════════════════════════════════════════════════ */
+.xp-bar-wrap { margin: 14px 0 18px; }
+.xp-bar-bg {
+  height: 6px;
+  background: var(--bg3);
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  overflow: hidden;
+  position: relative;
+}
+.xp-bar-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--accent), var(--teal));
+  border-radius: 2px;
+  transition: width .4s ease;
+  box-shadow: 0 0 12px rgba(16,217,160,.4);
+}
+.xp-label {
+  display: flex;
+  justify-content: space-between;
+  font-size: 10.5px;
+  color: var(--text3);
+  font-family: var(--font-mono);
+  margin-top: 6px;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+}
 
-/* ── BUTTON ── */
+/* ═══════════════════════════════════════════════════════════════════════
+   BUTTONS
+   ═══════════════════════════════════════════════════════════════════════ */
 .btn {
   background: var(--bg3);
   border: 1px solid var(--border2);
-  border-radius: 5px;
+  border-radius: 4px;
   color: var(--text2);
   cursor: pointer;
-  font-family: var(--font-head);
+  font-family: var(--font-mono);
   font-size: 11px;
-  letter-spacing: .06em;
-  padding: 7px 16px;
-  transition: all .2s;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+  padding: 8px 16px;
+  transition: all .15s;
+  font-weight: 500;
 }
-.btn:hover { background: var(--accent); border-color: var(--accent); color: white; }
-.btn.gold { border-color: var(--gold); color: var(--gold); }
-.btn.gold:hover { background: var(--gold); color: var(--bg); }
+.btn:hover { background: var(--accent); border-color: var(--accent); color: var(--bg); }
+.btn.gold { border-color: var(--accent); color: var(--accent); }
+.btn.gold:hover { background: var(--accent); color: var(--bg); }
 .btn.danger { border-color: var(--red); color: var(--red); }
 .btn.danger:hover { background: var(--red); color: white; }
 
-/* ── CHAR NAME HEADER ── */
+/* ═══════════════════════════════════════════════════════════════════════
+   CHAR BANNER — much more subtle since the HUD carries identity
+   ═══════════════════════════════════════════════════════════════════════ */
 .char-banner {
-  background: linear-gradient(135deg, var(--bg2) 0%, var(--bg3) 100%);
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  padding: 16px 20px;
-  margin-bottom: 16px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 20px;
+  display: none;  /* HUD replaces this entirely */
 }
 .char-name-display {
   font-family: var(--font-head);
   font-size: 22px;
-  color: var(--gold);
-  text-shadow: 0 0 20px rgba(212,168,67,.3);
+  color: var(--accent);
 }
 .char-subtitle { font-size: 13px; color: var(--text3); margin-top: 3px; }
 
-/* ── SCROLL TABLES ── */
+/* ═══════════════════════════════════════════════════════════════════════
+   SCROLL TABLES
+   ═══════════════════════════════════════════════════════════════════════ */
 .table-scroll { overflow-x: auto; }
 
-/* ── SPECIALIZATION ── */
+/* ═══════════════════════════════════════════════════════════════════════
+   COMPANIONS
+   ═══════════════════════════════════════════════════════════════════════ */
 .companion-card {
-  background: var(--bg2); border: 1px solid var(--border); border-radius: 10px;
+  background: var(--bg2); border: 1px solid var(--border); border-radius: 4px;
   margin-bottom: 16px; overflow: hidden;
 }
 .companion-card .companion-header {
   background: var(--bg3); padding: 12px 16px;
   display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+  border-bottom: 1px solid var(--border);
 }
 .companion-name-input {
-  background: transparent; border: none; color: var(--gold);
+  background: transparent; border: none; color: var(--accent);
   font-family: var(--font-head); font-size: 16px; font-weight: 700;
-  flex: 1; min-width: 120px; letter-spacing: .04em;
+  flex: 1; min-width: 120px; letter-spacing: -0.01em;
 }
 .companion-name-input:focus { outline: none; }
-.companion-body { padding: 14px 16px; }
+.companion-body { padding: 16px; }
 .companion-stat-grid {
-  display: grid; grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
-  gap: 8px; margin-bottom: 12px;
+  display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+  gap: 8px; margin-bottom: 14px;
 }
 .companion-stat-box {
-  background: var(--bg3); border: 1px solid var(--border); border-radius: 6px;
-  padding: 6px 10px; text-align: center;
+  background: var(--bg3); border: 1px solid var(--border); border-radius: 4px;
+  padding: 8px 12px; text-align: center;
 }
-.companion-stat-label { font-size: 9px; color: var(--text3); font-family: var(--font-mono); letter-spacing: .08em; text-transform: uppercase; margin-bottom: 4px; }
+.companion-stat-label { font-size: 9px; color: var(--text3); font-family: var(--font-mono); letter-spacing: .14em; text-transform: uppercase; margin-bottom: 4px; }
 .companion-stat-val { font-size: 18px; font-weight: 700; font-family: var(--font-head); color: var(--text); }
 .companion-stat-input {
   width: 100%; background: transparent; border: none; color: var(--text);
@@ -644,69 +1018,81 @@ select option { background: var(--bg3); }
 .companion-stat-input:focus { outline: none; }
 .companion-notes {
   width: 100%; background: var(--bg3); border: 1px solid var(--border);
-  border-radius: 6px; color: var(--text); font-family: var(--font-body);
-  font-size: 13px; padding: 8px 10px; resize: vertical; min-height: 60px;
+  border-radius: 4px; color: var(--text); font-family: var(--font-body);
+  font-size: 13px; padding: 10px 12px; resize: vertical; min-height: 60px;
   line-height: 1.6;
 }
 .companion-notes:focus { outline: none; border-color: var(--accent); }
 
+/* ═══════════════════════════════════════════════════════════════════════
+   QUESTS
+   ═══════════════════════════════════════════════════════════════════════ */
 .quest-card {
-  background: var(--bg3);
+  background: var(--bg2);
   border: 1px solid var(--border);
-  border-radius: 6px;
+  border-left: 3px solid var(--border2);
+  border-radius: 4px;
   padding: 12px 14px;
   margin-bottom: 8px;
+  transition: border-color .15s;
 }
-.quest-card.active-quest   { border-left: 3px solid var(--gold); }
-.quest-card.available-quest { border-left: 3px solid var(--teal); }
-.quest-card.completed-quest { border-left: 3px solid var(--green); opacity: 0.75; }
+.quest-card.active-quest    { border-left-color: var(--accent); }
+.quest-card.available-quest { border-left-color: var(--teal); }
+.quest-card.completed-quest { border-left-color: var(--text3); opacity: 0.7; }
 .quest-title-input {
   background: transparent; border: none; color: var(--text);
-  font-family: var(--font-head); font-size: 14px; font-weight: 600;
-  width: 100%; letter-spacing: .04em; margin-bottom: 6px;
+  font-family: var(--font-head); font-size: 15px; font-weight: 600;
+  width: 100%; letter-spacing: -0.01em; margin-bottom: 6px;
 }
 .quest-title-input:focus { outline: none; }
 .quest-desc-input {
   width: 100%; background: transparent; border: none;
   border-top: 1px solid var(--border); color: var(--text2);
-  font-size: 13px; margin-top: 6px; padding-top: 6px;
+  font-size: 13px; margin-top: 6px; padding-top: 8px;
   resize: none; min-height: 48px; font-family: var(--font-body);
   line-height: 1.6;
 }
 .quest-desc-input:focus { outline: none; }
 .quest-meta { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
-.quest-meta label { font-size: 10px; color: var(--text3); font-family: var(--font-mono); }
-.quest-meta input { background: var(--bg4); border: 1px solid var(--border); border-radius: 3px;
-  color: var(--text); font-family: var(--font-mono); font-size: 12px; padding: 2px 6px; }
+.quest-meta label { font-size: 10px; color: var(--text3); font-family: var(--font-mono); letter-spacing: .08em; text-transform: uppercase; }
+.quest-meta input { background: var(--bg3); border: 1px solid var(--border); border-radius: 3px;
+  color: var(--text); font-family: var(--font-mono); font-size: 12px; padding: 3px 8px; }
 .quest-actions { display: flex; gap: 6px; margin-left: auto; }
-.quest-move-btn { font-size: 11px; padding: 3px 8px; }
+.quest-move-btn { font-size: 10px; padding: 4px 10px; }
 
+/* ═══════════════════════════════════════════════════════════════════════
+   BUFFS
+   ═══════════════════════════════════════════════════════════════════════ */
 .buff-row {
   display: flex;
   align-items: flex-start;
   gap: 10px;
-  padding: 8px 10px;
-  border-radius: 6px;
-  background: var(--bg3);
+  padding: 10px 12px;
+  border-radius: 4px;
+  background: var(--bg2);
   border: 1px solid var(--border);
+  border-left: 3px solid var(--border2);
   margin-bottom: 6px;
 }
-.buff-row.debuff-type { border-color: rgba(224,85,85,.3); background: rgba(224,85,85,.05); }
-.buff-row.buff-type   { border-color: rgba(29,158,117,.3); background: rgba(29,158,117,.05); }
+.buff-row.debuff-type { border-left-color: var(--red); background: rgba(255,84,112,.04); }
+.buff-row.buff-type   { border-left-color: var(--accent); background: rgba(16,217,160,.04); }
 .buff-name-input { flex:1; background:transparent; border:none; color:var(--text); font-size:13px; font-weight:600; padding:0; }
 .buff-name-input:focus { outline:none; }
-.buff-desc-input { width:100%; background:transparent; border:none; border-top:1px solid var(--border); color:var(--text2); font-size:12px; margin-top:5px; padding-top:5px; resize:none; min-height:36px; font-family:var(--font-body); }
+.buff-desc-input { width:100%; background:transparent; border:none; border-top:1px solid var(--border); color:var(--text2); font-size:12px; margin-top:6px; padding-top:6px; resize:none; min-height:36px; font-family:var(--font-body); line-height:1.5; }
 .buff-desc-input:focus { outline:none; }
-.buff-duration { font-size:11px; color:var(--text3); font-family:var(--font-mono); white-space:nowrap; }
-.buff-duration input { width:60px; background:var(--bg4); border:1px solid var(--border); border-radius:3px; color:var(--text); font-family:var(--font-mono); font-size:11px; text-align:center; padding:2px 4px; }
-.buff-remove { color:var(--text3); cursor:pointer; font-size:16px; line-height:1; padding:2px 4px; transition:color .15s; }
+.buff-duration { font-size:10px; color:var(--text3); font-family:var(--font-mono); white-space:nowrap; letter-spacing:.06em; text-transform:uppercase; }
+.buff-duration input { width:60px; background:var(--bg3); border:1px solid var(--border); border-radius:3px; color:var(--text); font-family:var(--font-mono); font-size:11px; text-align:center; padding:3px 4px; }
+.buff-remove { color:var(--text3); cursor:pointer; font-size:18px; line-height:1; padding:2px 6px; transition:color .15s; }
 .buff-remove:hover { color:var(--red); }
 
+/* ═══════════════════════════════════════════════════════════════════════
+   SPEC BOX
+   ═══════════════════════════════════════════════════════════════════════ */
 .spec-box {
-  background: var(--bg3);
+  background: var(--bg2);
   border: 1px solid var(--border);
-  border-radius: 6px;
-  padding: 14px;
+  border-radius: 4px;
+  padding: 16px;
   font-size: 13px;
   line-height: 1.7;
   color: var(--text2);
@@ -714,39 +1100,113 @@ select option { background: var(--bg3); }
   white-space: pre-wrap;
 }
 
-/* ── DIVIDER ── */
-.div { border: none; border-top: 1px solid var(--border); margin: 12px 0; }
+/* ═══════════════════════════════════════════════════════════════════════
+   DIVIDER
+   ═══════════════════════════════════════════════════════════════════════ */
+.div { border: none; border-top: 1px solid var(--border); margin: 14px 0; }
 
-/* ── WEAPON BLOCK ── */
-.weapon-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+/* ═══════════════════════════════════════════════════════════════════════
+   WEAPON BLOCK
+   ═══════════════════════════════════════════════════════════════════════ */
+.weapon-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
 
-/* ── RESPONSIVE ── */
+/* ═══════════════════════════════════════════════════════════════════════
+   SCALING TABLE
+   ═══════════════════════════════════════════════════════════════════════ */
+.scaling-table { width: 100%; border-collapse: collapse; font-size: 12px; }
+/* When a scaling table lives inside a scrollable card-body, eliminate the
+   top padding so the sticky <th> sits flush with the card boundary and no
+   data rows can peek through above it as you scroll. */
+.card-body:has(> .scaling-table) { padding-top: 0; }
+.scaling-table th {
+  font-size: 9.5px; color: var(--accent); font-family: var(--font-mono);
+  padding: 6px 8px; border-bottom: 1px solid var(--border); background: var(--bg3);
+  position: sticky; top: 0; z-index: 2; letter-spacing: .12em; text-transform: uppercase;
+}
+.scaling-table td { padding: 4px 8px; border-bottom: 1px solid rgba(31,41,55,.3); font-family: var(--font-mono); color: var(--text2); text-align: center; }
+.scaling-table td:first-child { color: var(--accent); font-weight: 600; }
+.scaling-table tr:hover td { background: rgba(16,217,160,.05); }
+
+/* ═══════════════════════════════════════════════════════════════════════
+   ADD ROW BUTTON
+   ═══════════════════════════════════════════════════════════════════════ */
+.add-row { display: flex; justify-content: flex-end; margin-top: 10px; }
+
+/* ═══════════════════════════════════════════════════════════════════════
+   SCROLLBARS
+   ═══════════════════════════════════════════════════════════════════════ */
+::-webkit-scrollbar { width: 8px; height: 8px; }
+::-webkit-scrollbar-track { background: var(--bg); }
+::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 4px; }
+::-webkit-scrollbar-thumb:hover { background: var(--accent); }
+
+/* ═══════════════════════════════════════════════════════════════════════
+   RESPONSIVE
+   ═══════════════════════════════════════════════════════════════════════ */
+@media(max-width:1024px){
+  :root { --rail-w: 64px; }
+  .rail-brand-mark span,
+  .rail-brand-sub,
+  .nav-label,
+  .rail-section-label,
+  .rail-footer { display: none; }
+  .rail-footer-actions { display: none; }
+  .nav-item { justify-content: center; padding: 12px 0; }
+  .nav-icon { width: 22px; height: 22px; font-size: 16px; }
+  .rail-brand { padding: 4px 0 18px; text-align: center; }
+  .rail-brand-mark { justify-content: center; }
+  .rail-brand-mark::before { display: none; }
+}
 @media(max-width:768px){
-  .grid-2,.grid-3,.grid-4 { grid-template-columns: 1fr; }
+  .app { grid-template-columns: 1fr; display: block; }
+  .rail {
+    position: fixed;
+    bottom: 0;
+    top: auto;
+    left: 0; right: 0;
+    height: auto;
+    width: 100%;
+    flex-direction: row;
+    border-right: none;
+    border-top: 1px solid var(--border);
+    padding: 6px;
+    overflow-x: auto;
+    overflow-y: hidden;
+    z-index: 100;
+    background: var(--bg2);
+  }
+  .rail-brand,
+  .rail-section-label,
+  .rail-footer { display: none; }
+  .rail-nav { flex-direction: row; padding: 0; flex: 1; gap: 2px; }
+  .nav-item {
+    flex: 0 0 auto;
+    padding: 10px 14px !important;
+    justify-content: flex-start !important;
+    flex-direction: row !important;
+  }
+  .nav-item.active::before { display: none; }
+  .nav-item.active { background: rgba(16,217,160,.18); }
+  .nav-icon { display: inline-flex !important; }
+  .nav-label { display: none !important; } /* icon-only on mobile to fit all 11 tabs */
+  .content { padding: 16px 14px 80px; }
+  .hud { padding: 12px 14px; gap: 12px; }
+  .hud-name { font-size: 16px; }
+  .grid-2, .grid-3, .grid-4 { grid-template-columns: 1fr; }
   .coin-grid { grid-template-columns: repeat(2,1fr); }
   .ability-grid { grid-template-columns: repeat(3,1fr); }
   .vitals-strip { grid-template-columns: repeat(3,1fr); }
   .belt-grid { grid-template-columns: repeat(3,1fr); }
+  .hud-stats .hud-stat { padding: 5px 9px; min-width: 52px; }
+  .hud-stat-val { font-size: 15px; }
+  .hud-rest-btn { padding: 8px 12px; font-size: 10px; }
 }
-
-/* ── SCROLL STYLES ── */
-::-webkit-scrollbar { width: 6px; height: 6px; }
-::-webkit-scrollbar-track { background: var(--bg); }
-::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 3px; }
-
-/* ── SPELL SCALING TABLE ── */
-.scaling-table { width: 100%; border-collapse: collapse; font-size: 12px; }
-.scaling-table th { font-size: 10px; color: var(--gold); font-family: var(--font-mono); padding: 4px 8px; border-bottom: 1px solid var(--border); background: var(--bg3); position: sticky; top: 0; }
-.scaling-table td { padding: 3px 8px; border-bottom: 1px solid rgba(42,48,96,.2); font-family: var(--font-mono); color: var(--text2); text-align: center; }
-.scaling-table td:first-child { color: var(--gold); font-weight: 600; }
-.scaling-table tr:hover td { background: rgba(91,127,255,.06); }
-
-/* ── ADD ROW BUTTON ── */
-.add-row { display: flex; justify-content: flex-end; margin-top: 8px; }
 </style>
 </head>
 <body>
 <div class="app">
+
+  <!-- ═══════════════════ AUTH & CHAR-SELECT OVERLAYS (preserved) ═══════════════════ -->
 <!-- ═══════════ AUTH OVERLAY ═══════════ -->
 <div id="auth-overlay" style="
   position:fixed;inset:0;z-index:9999;
@@ -856,76 +1316,124 @@ select option { background: var(--bg3); }
 
 
 
-<!-- HEADER -->
-<div class="header">
-  <div></div>
-  <div>
-    <div class="header-title">Legends of the Vanguard</div>
-  </div>
-  <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;justify-content:flex-end;">
-    <div style="display:flex;gap:4px;">
-      <button class="btn" onclick="collapseAllCards()" title="Collapse all cards"
-        style="padding:4px 10px;font-size:10px;letter-spacing:.05em;">⊟ Collapse All</button>
-      <button class="btn" onclick="expandAllCards()" title="Expand all cards"
-        style="padding:4px 10px;font-size:10px;letter-spacing:.05em;">⊞ Expand All</button>
-      <button id="cloud-save-btn" onclick="cloudSaveCharacter()" title="Save to cloud"
-        style="display:none;padding:4px 12px;font-size:10px;letter-spacing:.05em;background:rgba(61,204,199,.12);
-               border:1px solid rgba(61,204,199,.35);border-radius:4px;color:var(--teal);cursor:pointer;
-               transition:all .2s;font-family:var(--font-mono);text-transform:uppercase;">☁ Cloud Save</button>
-      <button id="char-list-btn" onclick="showCharSelect()" title="Switch character"
-        style="display:none;padding:4px 12px;font-size:10px;letter-spacing:.05em;background:rgba(255,255,255,.05);
-               border:1px solid rgba(255,255,255,.12);border-radius:4px;color:var(--text3);cursor:pointer;
-               font-family:var(--font-mono);text-transform:uppercase;">⚔ Characters</button>
-      <button class="btn gold" onclick="saveCharacter()" title="Save character to file"
-        style="padding:4px 12px;font-size:10px;letter-spacing:.05em;">💾 Save</button>
-      <label class="btn" title="Load character from file"
-        style="padding:4px 12px;font-size:10px;letter-spacing:.05em;cursor:pointer;margin:0;">
-        📂 Load<input type="file" accept=".json" onchange="loadCharacter(event)" style="display:none;">
-      </label>
+  <!-- ═══════════════════ SIDEBAR RAIL ═══════════════════ -->
+  <aside class="rail">
+    <div class="rail-brand">
+      <div class="rail-brand-mark"><span>Vanguard</span></div>
+      <div class="rail-brand-sub">Character Codex</div>
     </div>
-    <span style="font-size:10px;color:var(--text3);font-family:var(--font-mono);letter-spacing:.06em;">THEME</span>
-    <select id="theme-select" onchange="applyTheme(this.value)"
-      style="background:var(--bg3);border:1px solid var(--border);border-radius:4px;
-             color:var(--text);font-family:var(--font-mono);font-size:11px;padding:4px 8px;
-             cursor:pointer;">
-      <option value="">Default (Dark)</option>
-      <optgroup label="─ Class Themes ─">
-        <option value="archer">Archer</option>
-        <option value="cleric">Cleric</option>
-        <option value="druid">Druid</option>
-        <option value="pugilist">Pugilist</option>
-        <option value="mage">Mage</option>
-        <option value="paladin">Paladin</option>
-        <option value="rogue">Rogue</option>
-        <option value="shaman">Shaman</option>
-        <option value="sorcerer">Sorcerer</option>
-        <option value="warlord">Warlord</option>
-        <option value="warrior">Warrior</option>
-      </optgroup>
-      <optgroup label="─ Other ─">
-        <option value="grey">Grey</option>
-        <option value="light">Light</option>
-      </optgroup>
-    </select>
-  </div>
-</div>
 
-<!-- TABS -->
-<div class="tabs">
-  <button class="tab active" onclick="showTab('main')">Main</button>
-  <button class="tab" onclick="showTab('inventory')">Inventory</button>
-  <button class="tab" onclick="showTab('spells')">Spells & Abilities</button>
-  <button class="tab" onclick="showTab('buffs')">Buffs / Debuffs</button>
-  <button class="tab" id="tab-btn-shapeshifting" onclick="showTab('shapeshifting')">Shapeshifting</button>
-  <button class="tab" id="tab-btn-companions" onclick="showTab('companions')">Companions</button>
-  <button class="tab" id="tab-btn-totems" onclick="showTab('totems')" style="display:none;">Totems</button>
-  <button class="tab" onclick="showTab('ailments')">Ailments</button>
-  <button class="tab" onclick="showTab('scaling')">Spell Scaling</button>
-  <button class="tab" onclick="showTab('notes')">Campaign Notes</button>
-  <button class="tab" onclick="showTab('quests')">Quests</button>
-</div>
+    <div class="rail-section-label">Sheet</div>
+    <nav class="rail-nav">
+      <button class="nav-item tab active" onclick="showTab('main')">
+        <span class="nav-icon">◆</span><span class="nav-label">Overview</span>
+      </button>
+      <button class="nav-item tab" onclick="showTab('inventory')">
+        <span class="nav-icon">▤</span><span class="nav-label">Inventory</span>
+      </button>
+      <button class="nav-item tab" onclick="showTab('spells')">
+        <span class="nav-icon">✦</span><span class="nav-label">Spells &amp; Abilities</span>
+      </button>
+      <button class="nav-item tab" onclick="showTab('buffs')">
+        <span class="nav-icon">↑</span><span class="nav-label">Buffs / Debuffs</span>
+      </button>
+      <button class="nav-item tab" id="tab-btn-shapeshifting" onclick="showTab('shapeshifting')">
+        <span class="nav-icon">⟁</span><span class="nav-label">Shapeshifting</span>
+      </button>
+      <button class="nav-item tab" id="tab-btn-companions" onclick="showTab('companions')">
+        <span class="nav-icon">⚐</span><span class="nav-label">Companions</span>
+      </button>
+      <button class="nav-item tab" id="tab-btn-totems" onclick="showTab('totems')" style="display:none;">
+        <span class="nav-icon">◉</span><span class="nav-label">Totems</span>
+      </button>
+      <button class="nav-item tab" onclick="showTab('ailments')">
+        <span class="nav-icon">☠</span><span class="nav-label">Ailments</span>
+      </button>
+      <button class="nav-item tab" onclick="showTab('scaling')">
+        <span class="nav-icon">≣</span><span class="nav-label">Spell Scaling</span>
+      </button>
+      <button class="nav-item tab" onclick="showTab('notes')">
+        <span class="nav-icon">✎</span><span class="nav-label">Campaign Notes</span>
+      </button>
+      <button class="nav-item tab" onclick="showTab('quests')">
+        <span class="nav-icon">▷</span><span class="nav-label">Quests</span>
+      </button>
+    </nav>
 
-<!-- ═══════════════════════════════════════════ MAIN TAB ═══════════════════════════════════════ -->
+    <div class="rail-footer">
+      <div class="rail-section-label" style="padding:0 4px 6px;">Actions</div>
+      <div class="rail-footer-actions">
+        <button class="rail-btn primary" onclick="saveCharacter()" title="Save to file">💾 Save</button>
+        <label class="rail-btn" title="Load from file" style="margin:0;">
+          📂 Load<input type="file" accept=".json" onchange="loadCharacter(event)" style="display:none;">
+        </label>
+        <button class="rail-btn" onclick="collapseAllCards()" title="Collapse all cards">⊟ Collapse</button>
+        <button class="rail-btn" onclick="expandAllCards()" title="Expand all cards">⊞ Expand</button>
+        <button id="cloud-save-btn" class="rail-btn cloud wide" onclick="cloudSaveCharacter()" title="Save to cloud" style="display:none;">☁ Cloud Save</button>
+        <button id="char-list-btn" class="rail-btn wide" onclick="showCharSelect()" title="Switch character" style="display:none;">⚔ Characters</button>
+      </div>
+      <div style="margin-top:6px;">
+        <div class="rail-section-label" style="padding:8px 4px 4px;">Theme</div>
+        <select id="theme-select" class="rail-theme" onchange="applyTheme(this.value)">
+          <option value="">Default (Emerald)</option>
+          <optgroup label="── Class Themes ──">
+            <option value="archer">Archer</option>
+            <option value="cleric">Cleric</option>
+            <option value="druid">Druid</option>
+            <option value="pugilist">Pugilist</option>
+            <option value="mage">Mage</option>
+            <option value="paladin">Paladin</option>
+            <option value="rogue">Rogue</option>
+            <option value="shaman">Shaman</option>
+            <option value="sorcerer">Sorcerer</option>
+            <option value="warlord">Warlord</option>
+            <option value="warrior">Warrior</option>
+          </optgroup>
+          <optgroup label="── Other ──">
+            <option value="grey">Grey</option>
+            <option value="light">Light</option>
+          </optgroup>
+        </select>
+      </div>
+    </div>
+  </aside>
+
+  <!-- ═══════════════════ MAIN COLUMN ═══════════════════ -->
+  <div class="main">
+
+    <!-- Sticky HUD -->
+    <div class="hud">
+      <div class="hud-identity">
+        <div class="hud-portrait" id="hud-portrait">
+          <span id="hud-portrait-placeholder">🧙</span>
+          <img id="hud-portrait-img" src="" alt="" style="display:none;">
+        </div>
+        <div class="hud-name-block">
+          <div class="hud-name" id="hud-name">New Character</div>
+          <div class="hud-sub" id="hud-sub">Select Class · Race · Background</div>
+        </div>
+      </div>
+
+      <div class="hud-stats">
+        <div class="hud-stat lv">
+          <div class="hud-stat-label">Level</div>
+          <div class="hud-stat-val" id="hud-level">1</div>
+        </div>
+        <div class="hud-stat hp">
+          <div class="hud-stat-label">HP</div>
+          <div class="hud-stat-val" id="hud-hp">0</div>
+        </div>
+        <div class="hud-stat xp">
+          <div class="hud-stat-label">XP</div>
+          <div class="hud-stat-val" id="hud-xp">0</div>
+        </div>
+      </div>
+
+      <button class="hud-rest-btn" onclick="openRestModal()" title="Take a Short, Long, or Full Rest">⛺ Rest</button>
+    </div>
+
+    <!-- Content -->
+    <div class="content">
 <div id="tab-main" class="panel active">
 
   <!-- CHAR BANNER -->
@@ -1130,7 +1638,7 @@ select option { background: var(--bg3); }
       <!-- MULTICLASS -->
       <div class="card" id="multiclass-card">
         <div class="card-header"><div class="dot" style="background:var(--teal)"></div>Multiclass
-          <span style="font-size:10px;color:var(--text3);font-family:var(--font-mono);margin-left:8px;">Base stat ≥ 14 required</span>
+          <span style="font-size:10px;color:var(--text3);font-family:var(--font-mono);margin-left:8px;">Base stat ≥ 18 required, 16 in two main stats for hybrid class</span>
         </div>
         <div class="card-body">
           <div id="multiclass-list"></div>
@@ -1443,7 +1951,7 @@ select option { background: var(--bg3); }
     <div class="card-header"><div class="dot" style="background:var(--teal)"></div>Race / Class / Special Abilities</div>
     <div class="card-body">
       <div class="rank-header">
-        <span>Ability Name</span><span>Damage</span>
+        <span>Ability Name</span><span>Description</span><span>Scaling</span><span>Action</span><span>Range</span><span>Dmg/Charges</span>
         <span>C1</span><span>C2</span><span>C3</span><span>C4</span><span>C5</span><span></span>
       </div>
       <div id="special-spells"></div>
@@ -1699,6 +2207,16 @@ select option { background: var(--bg3); }
       <table class="scaling-table" id="scaling-table"></table>
     </div>
   </div>
+  <div class="card">
+    <div class="card-header">
+      <div class="dot" style="background:var(--teal)"></div>
+      Base Healing / Utility Spell Growth
+      <span style="font-size:10px;color:var(--text3);font-family:var(--font-mono);margin-left:8px;letter-spacing:.08em;">(in testing)</span>
+    </div>
+    <div class="card-body table-scroll" style="max-height:70vh;overflow-y:auto;">
+      <table class="scaling-table heal-scaling-table" id="heal-scaling-table"></table>
+    </div>
+  </div>
 </div>
 
 
@@ -1788,6 +2306,10 @@ select option { background: var(--bg3); }
   </div>
 
 </div>
+
+    </div>
+
+  </div>
 
 </div><!-- /app -->
 
@@ -1919,7 +2441,7 @@ const BG_DATA = {
   'Bandit': `• Underhanded Fighter: Reroll an attack roll of 1 while flanking, once per round.\n• Starting Equipment: +1 additional die of starting currency.\n• +2 to Intimidation, +1 to Thievery (already calculated)`,
   'City Watch': `• Begin with starting currency x100cp instead of x50cp.\n• Good Deals: Up to two individual purchases at +1 reputation per day.\n• Tactics: +1 Armor while adjacent to an ally.\n• +2 to Perception, +1 to Fortitude (already calculated)`,
   'Cook': `• +1 hp each time you level up.\n• Begin with the Cooking profession for your entire party.\n• Profession Expertise: Once per day when you cook, gain bonus experience.\n• +2 to Survival, +1 to Animal Handling (already calculated)`,
-  'Criminal': `• Begin with 2 additional die of starting currency.\n• Begin at 1 reputation with cities you travel to.\n• Never Turn Your Back: +3% critical strike chance when flanking.\n• +2 to Thievery, +1 to Intimidation (already calculated)\n• May pick locks without lockpick.`,
+  'Criminal': `You were a criminal, thief, or cutthroat doing whatever it takes to survive.\n• Begin with 2 additional die of starting currency.\n• Begin at -2/1 reputation with cities you travel to.\n• Starting Equipment: (as determined by GM)\n• Never Turn Your Back: If you are in a flanking position, you have +3% critical strike chance on attacks. This does apply to ranged characters as well.\n• +2 to Thievery, +1 to Intimidation (already calculated)\n• You may pick simple or average locks without the need of a lockpick.`,
   'Entertainer': `• +2 to initiative from quick thinking during performances.\n• Begin with 1 pair of costume clothing.\n• Hard Target: Enemies have -1 to hit opportunity attacks against you.\n• Earn +1 reputation once per location after a successful performance.\n• +2 to Performance, +1 to Acrobatics (already calculated)`,
   'Farmer': `• Resistant to the first exhaustion stack per day.\n• When fighting plant type enemies, deal +1 damage.\n• Gathering Expert: +1 material on successful gathering attempts.\n• Receive +20% value when selling gathered materials.\n• +2 to Animal Handling, +1 to Survival (already calculated)`,
   'Fisherman': `• When fighting aquatic creatures, deal +1 damage.\n• Begin with one roll on the fishing table (2d100) worth of fish.\n• Begin with "Grandpa's Fishing Rod" — +10 to fishing rolls, +1 fish caught.\n• Begin with the Fishing profession (does not count toward limit).\n• +2 to Survival, +1 to Bartering (already calculated)`,
@@ -2148,11 +2670,10 @@ const SPEC_DATA = {
   'Ninja': `Ninja are masters of stealth, espionage, subterfuge, and assassination.
 
 • Gain +2 to your Stealth skill.
-• Gain proficiency with light armors.
 • Gain training (+1) with: Wakizashi (short sword), Tanto (dagger), Kunai (dagger/throwing), Shuriken (throwing stars), Claws (fist weapons).
-• Chi Ability — Darkness (2 Chi): Create a 30 ft diameter zone of magical darkness as a bonus action (same as mage spell "Darkness"). Only magical light can penetrate it. Stealth checks inside have advantage; Perception checks to find hidden targets have disadvantage.
-• Weapon Throw (2 Stamina) — As a bonus action, throw a kunai or shuriken at a target within 25 ft. If made from stealth, deal +1d8 damage and it doesn't break stealth (prompts a Stealth vs Perception check).
-• Assassin's Bond of Shadow — Attempt to bond with an enemy (WILL save). Once bonded, both you and your bond have -3 Defense when attacking each other. Range increases to 60 ft and you always know your bond's location regardless of sight. When bonded with an ally, both gain +2 armor penetration on attacks.`,
+• Veilwalker's Rebuke (2 Chi) — As a reaction when being targeted by a spell, you immediately vanish in a smoke bomb and teleport behind the caster targeting you and attempt to counter the target's spell. You enter into a competition with the caster where you must roll to hit using the same as the spell, and you must meet or beat the caster's roll; if you don't, the spell goes off as intended.
+• Chi Ability — Darkness (2 Chi): As a bonus action, create a 30 ft diameter zone of magical darkness (same as the mage spell "Darkness"). Only magical sources of light may penetrate it. Stealth checks made in this zone have advantage; Perception checks to discover hidden targets have disadvantage.
+• Weapon Throw (2 Stamina) — As a bonus action, throw a kunai or shuriken from your pouch at a target within 20 ft of you. If this attack is made from stealth, you deal an additional 1d8 damage and it doesn't break stealth, but does prompt a stealth competition (Stealth vs Perception).`,
 
   'Samurai': `Samurai are skilled martial warriors who dedicate themselves to the perfection of their craft.
 
@@ -2429,13 +2950,13 @@ const AILMENT_DATA = [
   { name:'Disarmed',      stacks:1, cat:'Physical',
     desc:`Weapon is dropped in an open space within 5 ft. Must use an action to pick up and re-equip. Bonus actions may still be used. Can swap to a second weapon if available.` },
   { name:'Blind',         stacks:1, cat:'Physical',
-    desc:`Cannot see beyond 5 ft. Melee attacks have -3 [scaling] to hit. Effective range set to 5 ft. Attacks beyond 5 ft against you have +3 to hit. Perception and Investigation suffer disadvantage (-6). Lasts up to 3 rounds or until cleansed.` },
+    desc:`Unable to see beyond 5 feet in front of you. Melee attacks have -3 [scaling] chance to hit. Your effective range is set to 5 feet. Attacks made beyond 5 ft against you have +3 chance to hit. Perception and Investigation checks suffer disadvantage (-6). Lasts up to 3 rounds or as determined by the spell/ability. This ailment can be physical or arcane in nature.` },
   { name:'Muted',         stacks:1, cat:'Physical',
     desc:`Unable to cast any spells, speak, or issue warnings.` },
   { name:'Incapacitated', stacks:1, cat:'Physical',
     desc:`Cannot move or take actions for the duration indicated or until an ally uses the Help action. Some effects can be ended with a dispel. All concentration is broken. Cannot speak. Automatically Surprised when rolling initiative.` },
   { name:'Stagger',       stacks:3, cat:'Physical',
-    desc:`Reduces chance to hit by 1 [scaling] per stack, reduces movement speed by 5, and you become vulnerable to the next attack that deals physical damage (+50% damage taken) once per turn. Lasts 3 turns per stack. At 3 stacks: Knocked Down.` },
+    desc:`Reduces your chance to hit by 1 [scaling], reduces movement speed by 5. Additionally you become vulnerable to the next attack that deals physical damage (+50% damage taken) once per round. Stagger lasts for 3 rounds. Stacks up to 3 times. At 3 stacks apply Knocked Down.` },
   { name:'Grappled',      stacks:1, cat:'Physical',
     desc:`-2 to BRW checks/saves. All attacks against you while grappled receive +1/2/3/4/5/6/7 to hit. Cannot make opportunity attacks. May still attack the target grappling you but deal -2 damage. Shield wielders lose defensive benefits.` },
   { name:'Restrained',    stacks:1, cat:'Physical',
@@ -2533,6 +3054,54 @@ const SPELL_SCALING = {
   8:  ['1d12+1d10','3d6+1d4','4d6','3d10','2d12+1d10','4d10','4d12','9d6','11d6','6d12+2d10'],
   9:  ['1d10+2d6','2d12','2d8+1d10','4d8','6d6','7d6','4d12+1d6','5d12','6d12','4d20+3d6'],
   10: ['2d12','4d6','4d4+1d10','4d6+1d10','4d10','11d4','9d6','6d10','9d8','5d20'],
+  11: ['4d6','1d10+2d8','7d4','1d20+2d8','7d6','4d12','4d12+1d10','8d8','13d6','10d10'],
+  12: ['2d10+1d6','3d6+2d4','5d6','6d6','11d4','5d10','2d12+3d10','7d10','7d12','9d12'],
+  13: ['2d10+1d6','1d12+2d8','4d8','4d10','1d10+6d6','2d10+4d8','8d8','7d10','5d12+4d6','11d10'],
+  14: ['2d10+1d6','1d12+2d8','4d8','2d12+4d4','4d12','2d10+6d6','4d12+2d10','7d10+1d4','9d10','9d12+1d8'],
+  15: ['3d6+1d8','1d12+2d8','3d12','7d6','4d12+1d4','3d10+4d8','2d12+5d10','4d20','8d12','10d12'],
+  16: ['7d4','7d4','6d6','5d8+1d4','9d6','8d8','4d10+3d12','1d10+12d6','4d20+3d8','5d20+4d6'],
+  17: ['7d4','7d4','3d10+1d8','4d10+1d6','4d12+1d10','11d6','4d20','4d20+1d6','7d12+2d10','10d12+1d8'],
+  18: ['7d4','7d4','4d10','5d10','4d8+5d6','6d12','7d12','7d12+1d8','11d10','13d10'],
+  19: ['7d4','3d10','5d8','9d6','8d8','2d12+5d10','5d12+4d6','8d12','5d20+2d6','12d12'],
+  20: ['5d6','3d10','11d4','10d6','5d12+3d8','4d20','9d10','1d12+9d10','5d20+3d6','15d10'],
+  21: ['1d12+2d10','3d10','4d12','8d8','6d12','7d12','8d12','108','—','—'],
+  22: ['4d8','1d12+2d10','8d6+1d4','7d10','13d6','9d10','5d20','120','—','—'],
+  23: ['6d6','3d12','4d12+1d8','7d10','7d12','8d12','9d12','124','—','—'],
+  24: ['3d10+1d8','4d10','5d10+1d8','6d12','9d10','5d20','19d6','11d12','—','—'],
+  25: ['11d4','11d4','5d12','9d8','8d12','9d12','10d12','—','—','—'],
+  26: ['4d12','6d8','6d10','4d20','—','—','—','—','—','—'],
+  27: ['8d6','8d6','10d6','8d10','—','—','—','—','—','—'],
+};
+
+// Base Healing / Utility Spell Growth (in testing)
+const HEAL_SCALING = {
+  1:  ['1d4','1d6','1d8','2d4','2d6','2d8','2d10','3d8','7d4','4d8'],
+  2:  ['1d6','1d6','1d8','2d4','2d6','2d8','2d10','3d8','7d4','4d8'],
+  3:  ['1d6','1d8','2d4','1d10','1d8+1d6','3d6','1d12+1d10','7d4','4d8','6d6'],
+  4:  ['1d6','1d8','2d4','1d10','1d8+1d6','3d6','1d12+1d10','7d4','4d8','6d6'],
+  5:  ['1d8','1d10','1d10','2d6','2d8','5d4','3d8','4d8','3d12','7d6'],
+  6:  ['1d8','1d10','1d10','2d6','2d8','5d4','4d6','4d8','3d12','7d6'],
+  7:  ['1d10','1d12','2d6','1d10+1d4','3d6','3d8','7d4','3d12','7d6','6d8'],
+  8:  ['1d10','1d12','2d6','1d10+1d4','3d6','3d8','7d4','6d6','7d6','6d8'],
+  9:  ['1d12','2d6','1d10+1d4','2d8','2d10','3d8','5d6','5d8','3d12+1d10','9d6'],
+  10: ['1d12','2d6','1d10+1d4','2d8','2d10','7d4','5d6','5d8','3d12+1d10','9d6'],
+  11: ['2d6','1d8+1d6','2d8','3d6','4d6','7d4','4d8','11d4','6d8','10d6'],
+  12: ['2d6','1d8+1d6','2d8','3d6','4d6','3d10','4d8','11d4','6d8','10d6'],
+  13: ['1d8+1d6','2d8','3d6','5d4','7d4','5d6','6d6','4d12','5d10','11d6'],
+  14: ['1d8+1d6','2d8','3d6','5d4','7d4','5d6','6d6','4d12','5d10','11d6'],
+  15: ['2d8','3d6','2d10','4d6','5d6','4d8','5d8','5d10','9d6','9d8'],
+  16: ['2d8','3d6','2d10','4d6','5d6','4d8','5d8','5d10','9d6','9d8'],
+  17: ['3d6','2d10','4d6','7d4','4d8','3d12','7d6','9d6','7d8','13d6'],
+  18: ['3d6','2d10','4d6','7d4','4d8','3d12','7d6','9d6','7d8','13d6'],
+  19: ['2d10','4d6','7d4','8d4','6d6','5d8','3d12+1d10','7d8','8d8','8d10'],
+  20: ['5d4','6d4','7d4','8d4','6d6','5d8','3d12+1d10','7d8','8d8','8d10'],
+  21: ['4d6','7d4','6d6','—','—','—','—','—','—','—'],
+  22: ['7d4','4d8','11d4','—','—','—','—','—','—','—'],
+  23: ['4d8','6d6','5d10','—','—','—','—','—','—','—'],
+  24: ['6d6','5d8','5d12','—','—','—','—','—','—','—'],
+  25: ['5d8','11d4','—','—','—','—','—','—','—','—'],
+  26: ['11d4','4d12','—','—','—','—','—','—','—','—'],
+  27: ['4d12','5d10','—','—','—','—','—','—','—','—'],
 };
 
 // ════════════════════════════════════════════════════════════════
@@ -2591,6 +3160,7 @@ function init() {
   buildProfTable();
   buildAilmentGrid();
   buildScalingTable();
+  buildHealScalingTable();
   buildEquipTable();
   buildTrainingTable();
   buildAbuffTable();
@@ -2968,6 +3538,11 @@ function recalc() {
     updateTotemsTab(cls, spec, level);
     buildHybridTable();
   }
+  // Refresh any auto-scaled spell damage now that level/class is known.
+  if (typeof recomputeAllSpellScaling === 'function') recomputeAllSpellScaling();
+  // Also update the Mana/Stamina/Rage labels on spell-section headers so
+  // they track the current class without rebuilding the rows.
+  if (typeof updateSpellSectionLabels === 'function') updateSpellSectionLabels();
   // Auto cloud save
   if (currentCharId) scheduleCloudSave();
 }
@@ -4110,12 +4685,32 @@ function buildScalingTable() {
   const levels = Object.keys(SPELL_SCALING).map(Number).sort((a,b) => a-b);
   const manas = [1,2,3,4,5,6,7,8,9,10];
   let html = '<thead><tr><th>Lvl \\ Mana</th>';
-  manas.forEach(m => html += `<th>${m} Mana</th>`);
+  manas.forEach(m => html += `<th>${m === 10 ? '10+' : m} Mana</th>`);
   html += '</tr></thead><tbody>';
   levels.forEach(lvl => {
     html += `<tr><td>${lvl}</td>`;
     manas.forEach((m, mi) => {
       const val = SPELL_SCALING[lvl] ? (SPELL_SCALING[lvl][mi] || '—') : '—';
+      html += `<td>${val}</td>`;
+    });
+    html += '</tr>';
+  });
+  html += '</tbody>';
+  table.innerHTML = html;
+}
+
+function buildHealScalingTable() {
+  const table = document.getElementById('heal-scaling-table');
+  if (!table) return;
+  const levels = Object.keys(HEAL_SCALING).map(Number).sort((a,b) => a-b);
+  const manas = [1,2,3,4,5,6,7,8,9,10];
+  let html = '<thead><tr><th>Lvl \\ Mana</th>';
+  manas.forEach(m => html += `<th>${m === 10 ? '10+' : m} Mana</th>`);
+  html += '</tr></thead><tbody>';
+  levels.forEach(lvl => {
+    html += `<tr><td>${lvl}</td>`;
+    manas.forEach((m, mi) => {
+      const val = HEAL_SCALING[lvl] ? (HEAL_SCALING[lvl][mi] || '—') : '—';
       html += `<td>${val}</td>`;
     });
     html += '</tr>';
@@ -4398,17 +4993,22 @@ const MANA_SECTIONS = [
 function initSpells() {
   const container = document.getElementById('mana-spell-sections');
   container.innerHTML = '';
+  // Use the current class's resource name (Mana / Stamina / Rage) so the
+  // section titles, table headers, and any resource-flavored copy track the
+  // chosen class. Falls back to 'Mana' for unset class.
+  const cls = document.getElementById('sel-class')?.value || '';
+  const resourceName = (CLASS_DATA[cls] && CLASS_DATA[cls].resource) || 'Mana';
   MANA_SECTIONS.filter(s => s.mana > 0).forEach(sec => {
     const card = document.createElement('div');
     card.className = 'card';
     card.innerHTML = `
       <div class="card-header">
         <div class="dot" style="background:var(--purple)"></div>
-        ${sec.mana} Mana Cost Abilities
+        ${sec.mana} ${resourceName} Cost Abilities
       </div>
       <div class="card-body">
         <div class="rank-header">
-          <span>Ability Name</span><span>Damage</span>
+          <span>Ability Name</span><span>Description</span><span>Scaling</span><span>Action</span><span>Range</span><span>Dmg</span>
           ${Array.from({length:sec.maxRanks}, (_,i) => `<span>R${i+1}</span>`).join('')}
           ${sec.maxRanks < 6 ? Array.from({length:6-sec.maxRanks}, () => '<span></span>').join('') : ''}
         </div>
@@ -4425,6 +5025,10 @@ function initSpells() {
   const sp = document.getElementById('special-spells');
   sp.innerHTML = '';
   for (let i = 0; i < 7; i++) addSpecialSpellRow();
+
+  // After all rows are built, run auto-scaling once so any rows with a
+  // pre-selected scaling type display their computed damage.
+  if (typeof recomputeAllSpellScaling === 'function') recomputeAllSpellScaling();
 }
 
 function addManaSpell(mana, ranks) {
@@ -4436,20 +5040,29 @@ function addManaSpellRow(containerId, mana, maxRanks) {
   if (!container) return;
   const row = document.createElement('div');
   row.className = 'spell-row';
+  row.dataset.mana = String(mana);
   let ranks = '';
   for (let i = 0; i < 6; i++) {
     if (i < maxRanks) {
-      ranks += `<input type="checkbox" class="rank-cb" onchange="updateSpellsDisplay()">`;
+      ranks += `<input type="checkbox" class="rank-cb" onchange="onSpellRankChange(this)">`;
     } else {
       ranks += `<span></span>`;
     }
   }
   row.innerHTML = `
-    <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center;width:100%;padding:4px 0;">
+    <div class="spell-row-top">
       <input type="text" class="spell-name-in" placeholder="Ability name..." onchange="updateSpellsDisplay()"
-        style="flex:2;min-width:140px;">
+        style="background:var(--bg4);border:1px solid var(--border);border-radius:3px;color:var(--text);font-size:13px;padding:4px 8px;">
+      <input type="text" class="spell-desc-in" placeholder="Description..." onchange="updateSpellsDisplay()"
+        style="background:var(--bg4);border:1px solid var(--border);border-radius:3px;color:var(--text2);font-size:11px;padding:4px 8px;">
+      <select class="spell-scaling-in" onchange="onSpellScalingChange(this)"
+        style="background:var(--bg4);border:1px solid var(--border);border-radius:3px;color:var(--text);font-size:11px;padding:4px 5px;">
+        <option value="None">None</option>
+        <option value="Spell">Spell</option>
+        <option value="Utility">Utility/Healing</option>
+      </select>
       <select class="spell-action-in" onchange="updateSpellsDisplay()"
-        style="background:var(--bg4);border:1px solid var(--border);border-radius:3px;color:var(--text);font-size:11px;padding:3px 5px;width:90px;">
+        style="background:var(--bg4);border:1px solid var(--border);border-radius:3px;color:var(--text);font-size:11px;padding:4px 5px;">
         <option value="">Action</option>
         <option value="Action">Action</option>
         <option value="Bonus">Bonus Action</option>
@@ -4457,15 +5070,10 @@ function addManaSpellRow(containerId, mana, maxRanks) {
         <option value="Free">Free</option>
       </select>
       <input type="text" class="spell-range-in" placeholder="Range" onchange="updateSpellsDisplay()"
-        style="background:var(--bg4);border:1px solid var(--border);border-radius:3px;color:var(--text);font-size:12px;padding:3px 6px;width:70px;">
+        style="background:var(--bg4);border:1px solid var(--border);border-radius:3px;color:var(--text);font-size:12px;padding:4px 6px;">
       <input type="text" class="spell-dmg-in" placeholder="Dmg" onchange="updateSpellsDisplay()"
-        style="background:var(--bg4);border:1px solid var(--border);border-radius:3px;color:var(--text);font-size:12px;padding:3px 6px;width:60px;">
-      <div style="display:flex;gap:4px;align-items:center;">${ranks}</div>
-    </div>
-    <div style="padding:2px 0 6px;">
-      <input type="text" class="spell-desc-in" placeholder="Description..." onchange="updateSpellsDisplay()"
-        style="width:100%;background:var(--bg4);border:1px solid var(--border);border-radius:3px;
-               color:var(--text2);font-size:11px;padding:3px 8px;">
+        style="background:var(--bg4);border:1px solid var(--border);border-radius:3px;color:var(--text);font-size:12px;padding:4px 6px;text-align:center;">
+      ${ranks}
     </div>`;
   container.appendChild(row);
 }
@@ -4474,17 +5082,144 @@ function addSpecialSpell() {
   addSpecialSpellRow();
 }
 
+// ════════════════════════════════════════════════════════════════
+// AUTO-SCALING for spells & abilities
+// ────────────────────────────────────────────────────────────────
+// Each spell row exposes:
+//   - data-mana="N" on .spell-row              (mana cost; specials default 1)
+//   - .spell-scaling-in select (None|Spell|Utility)
+//   - .rank-cb checkboxes (how many ranks are "purchased")
+//   - .spell-dmg-in input  (damage; auto-filled when scaling is on)
+//
+// Formula (per the user spec):
+//   effective_level = clamp(character_level + ranks_checked, 1, max_level_in_chart)
+//   column          = clamp(mana, 1, 10)  // chart columns go 1..10+
+//   dice            = SPELL_SCALING[level][column-1]    when scaling = Spell
+//                     HEAL_SCALING [level][column-1]    when scaling = Utility
+//
+// When scaling = "None" the dmg field is user-editable as before.
+// ════════════════════════════════════════════════════════════════
+function getCharacterLevel() {
+  // recalc() writes the computed level into #disp-level; falls back to 1.
+  const el = document.getElementById('disp-level');
+  const n = el ? parseInt(el.textContent, 10) : 1;
+  return (isFinite(n) && n >= 1) ? n : 1;
+}
+
+function lookupScaledDamage(scaling, mana, effLevel) {
+  if (scaling !== 'Spell' && scaling !== 'Utility') return null;
+  const chart = (scaling === 'Spell') ? SPELL_SCALING : HEAL_SCALING;
+  // Clamp to the chart's available rows
+  const maxRow = Math.max(...Object.keys(chart).map(Number));
+  const row    = Math.min(Math.max(1, effLevel), maxRow);
+  const col    = Math.min(Math.max(1, mana), 10) - 1; // 1..10 → 0..9
+  const arr    = chart[row];
+  return (arr && arr[col]) ? arr[col] : '—';
+}
+
+function applyRowAutoScaling(row) {
+  const scalingEl = row.querySelector('.spell-scaling-in');
+  const dmgEl     = row.querySelector('.spell-dmg-in');
+  if (!scalingEl || !dmgEl) return;
+  const scaling = scalingEl.value;
+  if (scaling === 'None' || !scaling) {
+    // User is in manual mode — release the dmg field so they can edit it.
+    dmgEl.classList.remove('auto-scaled');
+    dmgEl.readOnly = false;
+    return;
+  }
+  const mana = parseInt(row.dataset.mana || '1', 10) || 1;
+  // Count purchased ranks (only the visible checkboxes count — any beyond
+  // maxRanks were replaced by <span> placeholders so this is correct).
+  const ranksChecked = row.querySelectorAll('.rank-cb:checked').length;
+  const effLevel = getCharacterLevel() + ranksChecked;
+  const computed = lookupScaledDamage(scaling, mana, effLevel);
+  if (computed !== null) {
+    dmgEl.value = computed;
+    dmgEl.classList.add('auto-scaled');
+    dmgEl.readOnly = true;
+    const cls = document.getElementById('sel-class')?.value || '';
+    const resourceName = (CLASS_DATA[cls] && CLASS_DATA[cls].resource) || 'Mana';
+    dmgEl.title = `Auto-scaled (${scaling === 'Spell' ? 'Spell Damage' : 'Utility/Healing'}): ` +
+                  `level ${getCharacterLevel()} + ${ranksChecked} rank${ranksChecked===1?'':'s'} ` +
+                  `= row ${effLevel}, ${mana} ${resourceName} → ${computed}`;
+  }
+}
+
+function recomputeAllSpellScaling() {
+  document.querySelectorAll('.spell-row').forEach(applyRowAutoScaling);
+  // Keep the "Main" tab summary in sync if it reads from the dmg field.
+  if (typeof updateSpellsDisplay === 'function') updateSpellsDisplay();
+}
+
+// Update the "{N} Mana Cost Abilities" card titles to use the current class
+// resource name (Mana / Stamina / Rage). Called from recalc() so class
+// changes are reflected without rebuilding the spell rows (which would wipe
+// the user's typed-in spell data).
+function updateSpellSectionLabels() {
+  const cls = document.getElementById('sel-class')?.value || '';
+  const resourceName = (CLASS_DATA[cls] && CLASS_DATA[cls].resource) || 'Mana';
+  const container = document.getElementById('mana-spell-sections');
+  if (!container) return;
+  const headers = container.querySelectorAll('.card > .card-header');
+  // MANA_SECTIONS with mana>0 is what initSpells iterates over, in the same
+  // order; use its mana numbers to label each header.
+  const sections = MANA_SECTIONS.filter(s => s.mana > 0);
+  headers.forEach((h, i) => {
+    const sec = sections[i];
+    if (!sec) return;
+    // The card-header contains the .dot span plus a text node. Walk the
+    // child nodes and rewrite only the trailing text node, leaving the dot
+    // and any other markup intact.
+    for (const node of h.childNodes) {
+      if (node.nodeType === 3 /* TEXT_NODE */ && node.textContent.trim()) {
+        node.textContent = `\n        ${sec.mana} ${resourceName} Cost Abilities\n      `;
+        return;
+      }
+    }
+    // Fallback: if for some reason there was no text node, set it directly.
+    h.insertAdjacentText('beforeend', ` ${sec.mana} ${resourceName} Cost Abilities`);
+  });
+}
+
+// onchange on the Scaling dropdown — apply immediately, then update display.
+function onSpellScalingChange(selectEl) {
+  const row = selectEl.closest('.spell-row');
+  if (row) applyRowAutoScaling(row);
+  if (typeof updateSpellsDisplay === 'function') updateSpellsDisplay();
+}
+
+// onchange on any rank checkbox — recalc that row's auto-scaling (if active)
+// then update the display. Replaces the previous direct call to
+// updateSpellsDisplay() so a rank toggle now also retunes the scaled damage.
+function onSpellRankChange(cb) {
+  const row = cb.closest('.spell-row');
+  if (row) applyRowAutoScaling(row);
+  if (typeof updateSpellsDisplay === 'function') updateSpellsDisplay();
+}
+
 function addSpecialSpellRow() {
   const container = document.getElementById('special-spells');
   if (!container) return;
   const row = document.createElement('div');
   row.className = 'spell-row';
+  // Special abilities have no defined mana cost. When auto-scaling is
+  // enabled on one, treat it as a 1-mana spell for column-lookup purposes.
+  row.dataset.mana = '1';
   row.innerHTML = `
-    <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center;width:100%;padding:4px 0;">
+    <div class="spell-row-top">
       <input type="text" class="spell-name-in" placeholder="Ability name..." onchange="updateSpellsDisplay()"
-        style="flex:2;min-width:140px;">
+        style="background:var(--bg4);border:1px solid var(--border);border-radius:3px;color:var(--text);font-size:13px;padding:4px 8px;">
+      <input type="text" class="spell-desc-in" placeholder="Description..." onchange="updateSpellsDisplay()"
+        style="background:var(--bg4);border:1px solid var(--border);border-radius:3px;color:var(--text2);font-size:11px;padding:4px 8px;">
+      <select class="spell-scaling-in" onchange="onSpellScalingChange(this)"
+        style="background:var(--bg4);border:1px solid var(--border);border-radius:3px;color:var(--text);font-size:11px;padding:4px 5px;">
+        <option value="None">None</option>
+        <option value="Spell">Spell</option>
+        <option value="Utility">Utility/Healing</option>
+      </select>
       <select class="spell-action-in" onchange="updateSpellsDisplay()"
-        style="background:var(--bg4);border:1px solid var(--border);border-radius:3px;color:var(--text);font-size:11px;padding:3px 5px;width:90px;">
+        style="background:var(--bg4);border:1px solid var(--border);border-radius:3px;color:var(--text);font-size:11px;padding:4px 5px;">
         <option value="">Action</option>
         <option value="Action">Action</option>
         <option value="Bonus">Bonus Action</option>
@@ -4492,22 +5227,15 @@ function addSpecialSpellRow() {
         <option value="Free">Free</option>
       </select>
       <input type="text" class="spell-range-in" placeholder="Range" onchange="updateSpellsDisplay()"
-        style="background:var(--bg4);border:1px solid var(--border);border-radius:3px;color:var(--text);font-size:12px;padding:3px 6px;width:70px;">
+        style="background:var(--bg4);border:1px solid var(--border);border-radius:3px;color:var(--text);font-size:12px;padding:4px 6px;">
       <input type="text" class="spell-dmg-in" placeholder="Dmg/Charges" onchange="updateSpellsDisplay()"
-        style="background:var(--bg4);border:1px solid var(--border);border-radius:3px;color:var(--text);font-size:12px;padding:3px 6px;width:80px;">
-      <div style="display:flex;gap:4px;align-items:center;">
-        <input type="checkbox" class="rank-cb" onchange="updateSpellsDisplay()">
-        <input type="checkbox" class="rank-cb" onchange="updateSpellsDisplay()">
-        <input type="checkbox" class="rank-cb" onchange="updateSpellsDisplay()">
-        <input type="checkbox" class="rank-cb" onchange="updateSpellsDisplay()">
-        <input type="checkbox" class="rank-cb" onchange="updateSpellsDisplay()">
-        <span></span>
-      </div>
-    </div>
-    <div style="padding:2px 0 6px;">
-      <input type="text" class="spell-desc-in" placeholder="Description..." onchange="updateSpellsDisplay()"
-        style="width:100%;background:var(--bg4);border:1px solid var(--border);border-radius:3px;
-               color:var(--text2);font-size:11px;padding:3px 8px;">
+        style="background:var(--bg4);border:1px solid var(--border);border-radius:3px;color:var(--text);font-size:12px;padding:4px 6px;text-align:center;">
+      <input type="checkbox" class="rank-cb" onchange="onSpellRankChange(this)">
+      <input type="checkbox" class="rank-cb" onchange="onSpellRankChange(this)">
+      <input type="checkbox" class="rank-cb" onchange="onSpellRankChange(this)">
+      <input type="checkbox" class="rank-cb" onchange="onSpellRankChange(this)">
+      <input type="checkbox" class="rank-cb" onchange="onSpellRankChange(this)">
+      <span></span>
     </div>`;
   container.appendChild(row);
 }
@@ -5168,7 +5896,7 @@ function applyBuffStats() {
     if (stat && totals.hasOwnProperty(stat)) totals[stat] += val;
   });
 
-  // Sum debuff entries (negative — subtract)
+  // Sum debuff entries — negative numbers subtract, positive numbers add (as entered)
   const debuffRows = document.querySelectorAll('#debuff-list .buff-row');
   debuffRows.forEach(row => {
     const statSel = row.querySelector('select[id^="stat-"]');
@@ -5176,7 +5904,8 @@ function applyBuffStats() {
     if (!statSel || !valInp) return;
     const stat = statSel.value;
     const val  = parseFloat(valInp.value) || 0;
-    if (stat && totals.hasOwnProperty(stat)) totals[stat] -= val;
+    // Use value as-is: negative numbers subtract, positive numbers add
+    if (stat && totals.hasOwnProperty(stat)) totals[stat] += val;
   });
 
   state.buffStatTotals = totals;
@@ -6043,6 +6772,175 @@ function initCollapsibleCards() {
 // ════════════════════════════════════════════════════════════════
 // SAVE / LOAD
 // ════════════════════════════════════════════════════════════════
+function collectSpellState() {
+  const result = { special: [], mana: {} };
+
+  // Special abilities
+  document.querySelectorAll('#special-spells .spell-row').forEach(row => {
+    result.special.push({
+      name:    row.querySelector('.spell-name-in')?.value || '',
+      desc:    row.querySelector('.spell-desc-in')?.value || '',
+      scaling: row.querySelector('.spell-scaling-in')?.value || 'None',
+      action:  row.querySelector('.spell-action-in')?.value || '',
+      range:   row.querySelector('.spell-range-in')?.value || '',
+      dmg:     row.querySelector('.spell-dmg-in')?.value || '',
+      ranks:   Array.from(row.querySelectorAll('.rank-cb')).map(c => c.checked),
+    });
+  });
+
+  // Mana spells
+  [1,2,3,4,5,6,7,8,9,10].forEach(mana => {
+    const container = document.getElementById('mana-spells-' + mana);
+    if (!container) return;
+    result.mana[mana] = [];
+    container.querySelectorAll('.spell-row').forEach(row => {
+      result.mana[mana].push({
+        name:    row.querySelector('.spell-name-in')?.value || '',
+        desc:    row.querySelector('.spell-desc-in')?.value || '',
+        scaling: row.querySelector('.spell-scaling-in')?.value || 'None',
+        action:  row.querySelector('.spell-action-in')?.value || '',
+        range:   row.querySelector('.spell-range-in')?.value || '',
+        dmg:     row.querySelector('.spell-dmg-in')?.value || '',
+        ranks:   Array.from(row.querySelectorAll('.rank-cb')).map(c => c.checked),
+      });
+    });
+  });
+
+  return result;
+}
+
+function restoreSpellState(saved) {
+  if (!saved) return;
+
+  // Special abilities
+  if (saved.special) {
+    const container = document.getElementById('special-spells');
+    // Add rows if needed
+    while (container.querySelectorAll('.spell-row').length < saved.special.length) {
+      addSpecialSpellRow();
+    }
+    container.querySelectorAll('.spell-row').forEach((row, i) => {
+      const s = saved.special[i];
+      if (!s) return;
+      const setVal = (sel, val) => { const el = row.querySelector(sel); if (el) el.value = val; };
+      setVal('.spell-name-in', s.name || '');
+      setVal('.spell-desc-in', s.desc || '');
+      setVal('.spell-scaling-in', s.scaling || 'None');
+      setVal('.spell-action-in', s.action || '');
+      setVal('.spell-range-in', s.range || '');
+      setVal('.spell-dmg-in', s.dmg || '');
+      Array.from(row.querySelectorAll('.rank-cb')).forEach((cb, j) => { cb.checked = !!(s.ranks && s.ranks[j]); });
+    });
+  }
+
+  // Mana spells
+  if (saved.mana) {
+    Object.entries(saved.mana).forEach(([mana, spells]) => {
+      const container = document.getElementById('mana-spells-' + mana);
+      if (!container) return;
+      const sec = MANA_SECTIONS.find(s => s.mana == mana);
+      while (container.querySelectorAll('.spell-row').length < spells.length) {
+        addManaSpellRow('mana-spells-' + mana, parseInt(mana), sec?.maxRanks || 6);
+      }
+      container.querySelectorAll('.spell-row').forEach((row, i) => {
+        const s = spells[i];
+        if (!s) return;
+        const setVal = (sel, val) => { const el = row.querySelector(sel); if (el) el.value = val; };
+        setVal('.spell-name-in', s.name || '');
+        setVal('.spell-desc-in', s.desc || '');
+        setVal('.spell-scaling-in', s.scaling || 'None');
+        setVal('.spell-action-in', s.action || '');
+        setVal('.spell-range-in', s.range || '');
+        setVal('.spell-dmg-in', s.dmg || '');
+        Array.from(row.querySelectorAll('.rank-cb')).forEach((cb, j) => { cb.checked = !!(s.ranks && s.ranks[j]); });
+      });
+    });
+  }
+
+  // After restoring, refresh auto-scaling so any rows with scaling != None
+  // overwrite the saved dmg with the freshly-computed value (which respects
+  // the current character level and rank-count).
+  if (typeof recomputeAllSpellScaling === 'function') recomputeAllSpellScaling();
+  if (typeof updateSpellSectionLabels === 'function') updateSpellSectionLabels();
+  updateSpellsDisplay();
+}
+
+function collectCompanionState() {
+  const result = [];
+  document.querySelectorAll('#companion-list .companion-card').forEach(card => {
+    const nameEl = card.querySelector('.companion-name-input');
+    const statInputs = {};
+    card.querySelectorAll('.companion-stat-input').forEach(inp => {
+      const label = inp.closest('.companion-stat-box')?.querySelector('.companion-stat-label')?.textContent;
+      if (label) statInputs[label] = inp.value;
+    });
+    const textInputs = Array.from(card.querySelectorAll('input[type=text]:not(.companion-name-input):not(.companion-stat-input), textarea')).map(el => el.value);
+    result.push({
+      name: nameEl?.value || '',
+      stats: statInputs,
+      textInputs,
+    });
+  });
+  return result;
+}
+
+function restoreCompanionState(saved) {
+  if (!saved || !saved.length) return;
+  const emptyEl = document.getElementById('companion-empty');
+  if (emptyEl) emptyEl.style.display = 'none';
+  saved.forEach(c => {
+    addCompanion(null);
+    const cards = document.querySelectorAll('#companion-list .companion-card');
+    const card = cards[cards.length - 1];
+    if (!card) return;
+    const nameEl = card.querySelector('.companion-name-input');
+    if (nameEl) nameEl.value = c.name || '';
+    card.querySelectorAll('.companion-stat-input').forEach(inp => {
+      const label = inp.closest('.companion-stat-box')?.querySelector('.companion-stat-label')?.textContent;
+      if (label && c.stats && c.stats[label] !== undefined) inp.value = c.stats[label];
+    });
+    const textEls = Array.from(card.querySelectorAll('input[type=text]:not(.companion-name-input):not(.companion-stat-input), textarea'));
+    textEls.forEach((el, i) => { if (c.textInputs && c.textInputs[i] !== undefined) el.value = c.textInputs[i]; });
+  });
+}
+
+function collectGearState() {
+  const rows = [];
+  document.querySelectorAll('#equip-body tr').forEach((tr, rowIdx) => {
+    const rowData = {};
+    tr.querySelectorAll('input[data-stat], select[data-stat]').forEach(inp => {
+      const stat = inp.dataset.stat;
+      const col  = inp.dataset.col || stat;
+      if (stat) rowData[col] = inp.type === 'checkbox' ? inp.checked : inp.value;
+    });
+    // Capture scaling stat dropdowns by ID
+    const scalingEl = tr.querySelector('select[id="weapon-scaling-stat"], select[id="offhand-scaling-stat"]');
+    if (scalingEl) rowData['scalingStat'] = scalingEl.value;
+    rows.push(rowData);
+  });
+  return rows;
+}
+
+function restoreGearState(rows) {
+  if (!rows || !rows.length) return;
+  const trs = document.querySelectorAll('#equip-body tr');
+  rows.forEach((rowData, rowIdx) => {
+    const tr = trs[rowIdx];
+    if (!tr) return;
+    tr.querySelectorAll('input[data-stat], select[data-stat]').forEach(inp => {
+      const stat = inp.dataset.stat;
+      const col  = inp.dataset.col || stat;
+      if (!col || rowData[col] === undefined) return;
+      if (inp.type === 'checkbox') inp.checked = rowData[col];
+      else inp.value = rowData[col];
+    });
+    // Restore scaling stat dropdown
+    const scalingEl = tr.querySelector('select[id="weapon-scaling-stat"], select[id="offhand-scaling-stat"]');
+    if (scalingEl && rowData['scalingStat'] !== undefined) scalingEl.value = rowData['scalingStat'];
+  });
+  recalcInventory();
+}
+
 function collectFormValues() {
   const fields = {};
   document.querySelectorAll('input[id], select[id], textarea[id]').forEach(el => {
@@ -6095,6 +6993,9 @@ function buildSaveData() {
       totemInstances:           totemInstances,
     },
     fields: collectFormValues(),
+    gearState: collectGearState(),
+    spellState: collectSpellState(),
+    companionState: collectCompanionState(),
     theme: document.documentElement.getAttribute('data-theme') || '',
     portraitDataUrl: state._portraitDataUrl || null,
   };
@@ -6102,6 +7003,65 @@ function buildSaveData() {
 
 function applyLoadData(data) {
   if (!data || !data.state || !data.fields) throw new Error('Invalid save file format.');
+
+  // ── Full DOM + state wipe before loading new character ───────────────────
+  // Reset all state to zero/defaults
+  const ATTRS_LIST = ['BRW','AGI','PHY','INT','WILL','CHAR','LUCK'];
+  Object.assign(state.baseStats, {BRW:3,AGI:3,PHY:3,INT:3,WILL:3,CHAR:3,LUCK:10});
+  Object.keys(state.skillPM).forEach(k => state.skillPM[k] = 0);
+  state.skillPointHistory = Array.from({length:20}, () => ({}));
+  state.lockedLevels = new Set();
+  state.gearRows = [];
+  Object.keys(state.gearStats).forEach(k => state.gearStats[k] = 0);
+  state.professions = [];
+  Object.keys(state.buffStatTotals).forEach(k => state.buffStatTotals[k] = 0);
+  Object.keys(state.inventoryGearModBufStats).forEach(k => state.inventoryGearModBufStats[k] = 0);
+  state.deathSuccesses = [false,false,false];
+  state.deathFails = [false,false,false];
+  state.pylCharges = [false,false];
+  state.vitalHP = 0; state.vitalTempHP = 0; state.vitalStamina = 0;
+  state.multiclasses = []; state.mainClassLevel = null;
+  state.chiCurrent = 0; state.strandsCurrent = 0; state.bloodChargesCurrent = 0;
+  state.comboDiceCurrent = 0; state.furyChargesCurrent = 0;
+  state.ordersChargesCurrent = 0; state.druidAPCurrent = 0;
+  state.skeletonChargesCurrent = 0; state.soulFragmentsCurrent = 0;
+  state.battlemageFuryCurrent = 0; state._portraitDataUrl = null;
+  state.shapeshiftBonuses = {};
+  ssCharges = 2; ssSelectedMastery = null; ssSelectedUtility = null;
+  chosenTotem = null; chosenTotem2 = null; totemLocked = false; totemLocked2 = false; totemInstances = [];
+
+  // Wipe all form fields to blank
+  document.querySelectorAll('input[id]:not([type=radio]):not([type=file]), select[id], textarea[id]').forEach(el => {
+    if (el.type === 'checkbox') el.checked = false;
+    else if (el.tagName === 'SELECT') el.selectedIndex = 0;
+    else el.value = '';
+  });
+
+  // Rebuild all dynamic tables fresh (clears any previous row data)
+  buildEquipTable();
+  buildSkillTables();
+  buildAbuffTable();
+  rebuildProfTable();
+  buildAilmentGrid();
+  buildResistGrid();
+  initSpells();
+
+  // Clear companions
+  const compList = document.getElementById('companion-list');
+  if (compList) { compList.innerHTML = ''; const empEl = document.getElementById('companion-empty'); if (empEl) empEl.style.display = ''; }
+
+  // Clear buff/debuff lists
+  const buffList = document.getElementById('buff-list');
+  const debuffList = document.getElementById('debuff-list');
+  if (buffList)   buffList.innerHTML = '';
+  if (debuffList) debuffList.innerHTML = '';
+
+  // Clear vitals display
+  ['disp-hp','disp-temphp','disp-stamina'].forEach(id => { const el = document.getElementById(id); if (el) el.textContent = '0'; });
+
+  // Clear portrait
+  removePortrait();
+  // ─────────────────────────────────────────────────────────────────────────
 
   const s = data.state;
 
@@ -6155,21 +7115,36 @@ function applyLoadData(data) {
     else el.value = val;
   });
 
-  // Second pass: fire critical change handlers in dependency order
-  // Race must fire first (populates subrace dropdown)
+  // Restore dropdowns in dependency order so each populates its children
+  // 1. Class first — must be set before spec dropdown is populated
+  const classEl = document.getElementById('sel-class');
+  if (classEl && fields['sel-class']) {
+    classEl.value = fields['sel-class'];
+    // Trigger recalc to rebuild spec dropdown options
+    updateSpecDropdown();
+  }
+
+  // 2. Spec — set after spec dropdown is populated
+  const specEl = document.getElementById('sel-spec');
+  if (specEl && fields['sel-spec']) {
+    specEl.value = fields['sel-spec'];
+  }
+
+  // 3. Race — populates subrace dropdown
   const raceEl = document.getElementById('sel-race');
-  if (raceEl && raceEl.value) {
+  if (raceEl && fields['sel-race']) {
+    raceEl.value = fields['sel-race'];
     onRaceChange();
-    // After race populates subrace, restore subrace value
+    // 4. Subrace — set after subrace dropdown is populated
     const subEl = document.getElementById('sel-subrace');
     if (subEl && fields['sel-subrace']) subEl.value = fields['sel-subrace'];
   }
 
-  // Class must fire (populates spec dropdown, sets resource label, hit die etc)
-  const classEl = document.getElementById('sel-class');
-  if (classEl && classEl.value) {
-    // updateSpecDropdown is called inside recalc - just ensure value is set
-  }
+  // 5. Background, Alignment — straightforward
+  const bgEl  = document.getElementById('sel-bg');
+  const alEl  = document.getElementById('sel-alignment');
+  if (bgEl  && fields['sel-bg'])        bgEl.value  = fields['sel-bg'];
+  if (alEl  && fields['sel-alignment']) alEl.value  = fields['sel-alignment'];
 
   // Theme
   if (data.theme) {
@@ -6695,6 +7670,8 @@ function skipAuth() {
 async function signOut() {
   if (supabaseClient) await supabaseClient.auth.signOut();
   currentUser = null; currentCharId = null;
+  localStorage.removeItem('lov_character_autosave');
+  localStorage.removeItem('lov_character_autosave_portrait');
   document.getElementById('char-select-overlay').style.display = 'none';
   document.getElementById('cloud-save-btn').style.display = 'none';
   document.getElementById('char-list-btn').style.display = 'none';
@@ -6788,6 +7765,20 @@ function resetStateToDefaults() {
   const xpEl = document.getElementById('inp-xp'); if (xpEl) xpEl.value = '0';
   buildEquipTable(); buildSkillTables(); buildAbuffTable();
   rebuildProfTable(); buildAilmentGrid(); buildResistGrid();
+
+  // Clear companion list
+  const compList = document.getElementById('companion-list');
+  if (compList) { compList.innerHTML = ''; const empEl = document.getElementById('companion-empty'); if (empEl) empEl.style.display = ''; }
+
+  // Clear spell rows and reinitialize fresh
+  initSpells();
+
+  // Clear buff/debuff lists
+  const buffList = document.getElementById('buff-list');
+  const debuffList = document.getElementById('debuff-list');
+  if (buffList)   buffList.innerHTML = '';
+  if (debuffList) debuffList.innerHTML = '';
+
   removePortrait();
   const hpEl = document.getElementById('disp-hp'); if (hpEl) hpEl.textContent = '0';
   const tmpEl = document.getElementById('disp-temphp'); if (tmpEl) tmpEl.textContent = '0';
@@ -6835,6 +7826,9 @@ async function loadCloudCharacter(id) {
   document.getElementById('cloud-save-btn').style.display = '';
   document.getElementById('char-list-btn').style.display = '';
   try {
+    // Clear any local autosave so it doesn't interfere with the cloud character
+    localStorage.removeItem('lov_character_autosave');
+    localStorage.removeItem('lov_character_autosave_portrait');
     applyLoadData(data.data);
     showSaveBanner('✓ Character loaded from cloud');
   } catch(e) {
@@ -6884,6 +7878,401 @@ function scheduleCloudSave() {
     cloudSaveCharacter();
   }, 2000);
 }
+</script>
+
+<!-- ═══════════════════════ SAVE/LOAD COMPLETENESS PATCH ═══════════════════════
+     Fixes:
+       1. Buffs/Debuffs were not being saved or restored at all.
+       2. Equipped gear, spells, and companions were being saved but never
+          restored (their restore* functions existed but were never called).
+       3. Cloud auto-save only fired on a handful of inputs; most edits
+          (typing item names, spell descriptions, buff text, etc.) silently
+          went unsaved.
+     Strategy: wrap the existing buildSaveData / applyLoadData rather than
+     editing them, and add a universal delegated change listener for cloud
+     auto-save.
+     ─────────────────────────────────────────────────────────────────── -->
+<script>
+(function() {
+
+  /* ── BUFFS / DEBUFFS — collect & restore ──────────────────────────────── */
+  function collectBuffRow(row) {
+    const nameEl = row.querySelector('.buff-name-input');
+    const descEl = row.querySelector('.buff-desc-input');
+    const statEl = row.querySelector('select[id^="stat-"]');
+    const valEl  = row.querySelector('input[id^="val-"]');
+    const durEl  = row.querySelector('.buff-duration input');
+    return {
+      name:     nameEl ? nameEl.value : '',
+      desc:     descEl ? descEl.value : '',
+      stat:     statEl ? statEl.value : '',
+      value:    valEl  ? valEl.value  : '',
+      duration: durEl  ? durEl.value  : '',
+    };
+  }
+
+  window.collectBuffState = function() {
+    const out = { buffs: [], debuffs: [] };
+    document.querySelectorAll('#buff-list   .buff-row').forEach(r => out.buffs.push(collectBuffRow(r)));
+    document.querySelectorAll('#debuff-list .buff-row').forEach(r => out.debuffs.push(collectBuffRow(r)));
+    return out;
+  };
+
+  function fillBuffRow(row, data) {
+    const nameEl = row.querySelector('.buff-name-input');
+    const descEl = row.querySelector('.buff-desc-input');
+    const statEl = row.querySelector('select[id^="stat-"]');
+    const valEl  = row.querySelector('input[id^="val-"]');
+    const durEl  = row.querySelector('.buff-duration input');
+    if (nameEl) nameEl.value = data.name     || '';
+    if (descEl) descEl.value = data.desc     || '';
+    if (statEl) statEl.value = data.stat     || '';
+    if (valEl)  valEl.value  = data.value    || '0';
+    if (durEl)  durEl.value  = data.duration || '';
+  }
+
+  window.restoreBuffState = function(saved) {
+    if (!saved) return;
+    // Clear current rows first
+    const buffList   = document.getElementById('buff-list');
+    const debuffList = document.getElementById('debuff-list');
+    if (buffList)   buffList.innerHTML   = '';
+    if (debuffList) debuffList.innerHTML = '';
+    // Hide/show empty placeholders
+    const buffEmpty   = document.getElementById('buff-empty');
+    const debuffEmpty = document.getElementById('debuff-empty');
+    if (buffEmpty)   buffEmpty.style.display   = (saved.buffs   && saved.buffs.length)   ? 'none' : '';
+    if (debuffEmpty) debuffEmpty.style.display = (saved.debuffs && saved.debuffs.length) ? 'none' : '';
+
+    // Recreate buffs
+    (saved.buffs || []).forEach(b => {
+      addBuffEntry('buff');
+      const rows = document.querySelectorAll('#buff-list .buff-row');
+      const row  = rows[rows.length - 1];
+      if (row) fillBuffRow(row, b);
+    });
+    // Recreate debuffs
+    (saved.debuffs || []).forEach(b => {
+      addBuffEntry('debuff');
+      const rows = document.querySelectorAll('#debuff-list .buff-row');
+      const row  = rows[rows.length - 1];
+      if (row) fillBuffRow(row, b);
+    });
+    // Recompute totals so stats reflect restored buffs
+    if (typeof applyBuffStats === 'function') applyBuffStats();
+  };
+
+  /* ── Wrap buildSaveData to include buffState ──────────────────────────── */
+  const _origBuildSaveData = window.buildSaveData;
+  window.buildSaveData = function() {
+    const data = _origBuildSaveData();
+    try { data.buffState = collectBuffState(); } catch(e) { console.warn('buffState collect failed:', e); }
+    return data;
+  };
+
+  /* ── Wrap applyLoadData to actually CALL the restore functions ────────── */
+  const _origApplyLoadData = window.applyLoadData;
+  window.applyLoadData = function(data) {
+    // Block cloud auto-save while loading so the in-progress state isn't
+    // pushed up to the cloud and overwriting the real save.
+    window._loadingCharacter = true;
+    try {
+      _origApplyLoadData(data);
+
+      // Now invoke the restore functions the original applyLoadData forgot.
+      try { if (data.gearState      && typeof restoreGearState      === 'function') restoreGearState(data.gearState); }      catch(e) { console.warn('restoreGearState failed:', e); }
+      try { if (data.spellState     && typeof restoreSpellState     === 'function') restoreSpellState(data.spellState); }     catch(e) { console.warn('restoreSpellState failed:', e); }
+      try { if (data.companionState && typeof restoreCompanionState === 'function') restoreCompanionState(data.companionState); } catch(e) { console.warn('restoreCompanionState failed:', e); }
+      try { if (data.buffState      && typeof restoreBuffState      === 'function') restoreBuffState(data.buffState); }      catch(e) { console.warn('restoreBuffState failed:', e); }
+
+      // Sync the visible banner name display from the restored hidden input.
+      // (The original applyLoadData restores input values but never updates
+      // the visible <span id="banner-name"> that the HUD reads from.)
+      try {
+        const display = document.getElementById('banner-name');
+        const input   = document.getElementById('banner-name-input');
+        if (display && input) {
+          const name = (input.value || '').trim() || 'New Character';
+          display.textContent = name;
+          display.style.display = 'inline-block';
+          input.style.display   = 'none';
+        }
+      } catch(e) {}
+
+      // Final recalc so derived values (defenses, totals, ability mods)
+      // reflect everything we just restored.
+      try { if (typeof recalc === 'function') recalc(); } catch(e) {}
+      try { if (typeof recalcInventory === 'function') recalcInventory(); } catch(e) {}
+    } finally {
+      // Allow cloud saves again after a short delay (so the recalc-triggered
+      // scheduleCloudSave call inside the load doesn't push partial state).
+      setTimeout(() => { window._loadingCharacter = false; }, 100);
+    }
+  };
+
+  /* ── INVENTORY TABLES — collect & restore ─────────────────────────────────
+     Covers Inventory (unequipped), Potions, Miscellaneous, and Profession
+     Items cards. Each is a tbody whose rows contain three inputs (name, qty,
+     weight) with no IDs, so the generic form-value collector misses them
+     entirely. Each tbody is treated as a list of {name, qty, weight} rows;
+     trailing empty rows are dropped from the save to keep payloads small.
+     ─────────────────────────────────────────────────────────────────── */
+  const INV_TABLES = [
+    { id: 'inv-body',       defaultRows: 10 },
+    { id: 'pot-body',       defaultRows: 10 },
+    { id: 'misc-body',      defaultRows: 10 },
+    { id: 'profitems-body', defaultRows: 8  },
+  ];
+
+  function collectInvTable(tbodyId) {
+    const tbody = document.getElementById(tbodyId);
+    if (!tbody) return [];
+    const rows = [];
+    tbody.querySelectorAll('tr').forEach(tr => {
+      const inputs = tr.querySelectorAll('input');
+      if (inputs.length < 3) return;
+      rows.push({
+        name: inputs[0].value || '',
+        qty:  inputs[1].value || '',
+        wt:   inputs[2].value || '',
+      });
+    });
+    // Trim trailing fully-empty rows
+    while (rows.length && !rows[rows.length-1].name &&
+           (rows[rows.length-1].qty === '' || rows[rows.length-1].qty === '0') &&
+           (rows[rows.length-1].wt  === '' || rows[rows.length-1].wt  === '0')) {
+      rows.pop();
+    }
+    return rows;
+  }
+
+  window.collectInventoryTables = function() {
+    const out = {};
+    INV_TABLES.forEach(t => { out[t.id] = collectInvTable(t.id); });
+    return out;
+  };
+
+  window.restoreInventoryTables = function(saved) {
+    INV_TABLES.forEach(t => {
+      const tbody = document.getElementById(t.id);
+      if (!tbody) return;
+      const data = (saved && saved[t.id]) || [];
+      // Rebuild fresh so previous character's data is wiped first
+      if (typeof buildInvRows === 'function') {
+        buildInvRows(t.id, Math.max(t.defaultRows, data.length));
+      } else {
+        tbody.innerHTML = '';
+        for (let i = 0; i < Math.max(t.defaultRows, data.length); i++) {
+          if (typeof addInvRow === 'function') addInvRow(t.id);
+        }
+      }
+      // Fill in saved values
+      const rows = tbody.querySelectorAll('tr');
+      data.forEach((d, idx) => {
+        const tr = rows[idx];
+        if (!tr) return;
+        const inputs = tr.querySelectorAll('input');
+        if (inputs.length < 3) return;
+        inputs[0].value = d.name || '';
+        inputs[1].value = (d.qty  !== undefined && d.qty  !== '') ? d.qty  : '0';
+        inputs[2].value = (d.wt   !== undefined && d.wt   !== '') ? d.wt   : '0';
+      });
+    });
+    // Recompute carry weight etc.
+    try { if (typeof recalcInventory === 'function') recalcInventory(); } catch(e) {}
+    try { if (typeof recalc === 'function') recalc(); } catch(e) {}
+  };
+
+  /* ── QUESTS — collect & restore ───────────────────────────────────────────
+     Three quest lists (active / available / completed), each containing
+     quest-card divs created dynamically by addQuest(). Each card has:
+       - .quest-title-input (title)
+       - .quest-meta inputs (reward, location, given-by)
+       - .quest-desc-input  (description textarea)
+     ─────────────────────────────────────────────────────────────────── */
+  const QUEST_LISTS = ['active', 'available', 'completed'];
+
+  function collectQuestCard(card) {
+    const metaInputs = [...card.querySelectorAll('.quest-meta input:not(.quest-title-input)')];
+    return {
+      title:    card.querySelector('.quest-title-input')?.value || '',
+      reward:   metaInputs[0]?.value || '',
+      location: metaInputs[1]?.value || '',
+      givenBy:  metaInputs[2]?.value || '',
+      desc:     card.querySelector('.quest-desc-input')?.value || '',
+    };
+  }
+
+  window.collectQuests = function() {
+    const out = {};
+    QUEST_LISTS.forEach(type => {
+      out[type] = [];
+      const listEl = document.getElementById('quests-' + type);
+      if (!listEl) return;
+      listEl.querySelectorAll('.quest-card').forEach(card => {
+        out[type].push(collectQuestCard(card));
+      });
+    });
+    return out;
+  };
+
+  window.restoreQuests = function(saved) {
+    QUEST_LISTS.forEach(type => {
+      const listEl  = document.getElementById('quests-' + type);
+      const emptyEl = document.getElementById('quests-' + type + '-empty');
+      if (!listEl) return;
+      // Clear previous-character quests
+      listEl.innerHTML = '';
+      const quests = (saved && saved[type]) || [];
+      if (emptyEl) emptyEl.style.display = quests.length ? 'none' : '';
+      // Recreate each quest and fill in its values
+      quests.forEach(q => {
+        if (typeof addQuest !== 'function') return;
+        addQuest(type);
+        const cards = listEl.querySelectorAll('.quest-card');
+        const card  = cards[cards.length - 1];
+        if (!card) return;
+        const titleEl = card.querySelector('.quest-title-input');
+        if (titleEl) titleEl.value = q.title || '';
+        const metaInputs = [...card.querySelectorAll('.quest-meta input:not(.quest-title-input)')];
+        if (metaInputs[0]) metaInputs[0].value = q.reward   || '';
+        if (metaInputs[1]) metaInputs[1].value = q.location || '';
+        if (metaInputs[2]) metaInputs[2].value = q.givenBy  || '';
+        const descEl = card.querySelector('.quest-desc-input');
+        if (descEl) descEl.value = q.desc || '';
+      });
+    });
+  };
+
+  /* ── Wire inventory tables + quests into save/load ───────────────────────
+     We already wrapped buildSaveData earlier to add buffState. Wrap it again
+     to add inventoryTables and quests. (Re-wrapping the already-wrapped
+     function works fine — the new wrapper calls our previously-wrapped one.)
+     ─────────────────────────────────────────────────────────────────── */
+  const _origBuildSaveData2 = window.buildSaveData;
+  window.buildSaveData = function() {
+    const data = _origBuildSaveData2();
+    try { data.inventoryTables = collectInventoryTables(); } catch(e) { console.warn('inventoryTables collect failed:', e); }
+    try { data.quests          = collectQuests();           } catch(e) { console.warn('quests collect failed:', e); }
+    return data;
+  };
+
+  const _origApplyLoadData2 = window.applyLoadData;
+  window.applyLoadData = function(data) {
+    _origApplyLoadData2(data);
+    // Restore happens after the original wrapped applyLoadData finishes.
+    // Inventory tables and quests aren't touched by any wipe logic in the
+    // original code, so previous-character data would otherwise persist.
+    try { restoreInventoryTables(data && data.inventoryTables); } catch(e) { console.warn('restoreInventoryTables failed:', e); }
+    try { restoreQuests(data && data.quests); }                  catch(e) { console.warn('restoreQuests failed:', e); }
+  };
+
+  /* ── Wrap resetStateToDefaults to also clear inventory + quests ──────────
+     The original resetStateToDefaults clears equipped gear, skills, spells,
+     buffs, companions, portrait, etc. — but it never touches the four
+     unequipped-inventory tbodies or the three quest lists. So when the user
+     creates a new character or switches characters via the cloud flow,
+     whatever was in those tables from the PREVIOUS character would persist
+     in the DOM and immediately get auto-saved into the new character's row.
+     This wrapper closes that hole.
+     ─────────────────────────────────────────────────────────────────── */
+  if (typeof window.resetStateToDefaults === 'function') {
+    const _origReset = window.resetStateToDefaults;
+    window.resetStateToDefaults = function() {
+      // Block cloud auto-save while we wipe + reset, otherwise the cascade
+      // of input events would push the partially-cleared state up.
+      window._loadingCharacter = true;
+      try {
+        _origReset.apply(this, arguments);
+        // Clear inventory tables to default empty rows
+        try { restoreInventoryTables(null); } catch(e) { console.warn('reset: restoreInventoryTables failed:', e); }
+        // Clear all quest lists
+        try { restoreQuests(null); }          catch(e) { console.warn('reset: restoreQuests failed:', e); }
+      } finally {
+        setTimeout(() => { window._loadingCharacter = false; }, 100);
+      }
+    };
+  }
+
+  /* ── Wrap createNewCharacter so the new row is born with a CLEAN state ──
+     Original code calls buildSaveData() before resetStateToDefaults(), so
+     the new character row is created with the PREVIOUS character's data
+     in the cloud. If the user then switches to that new character later,
+     they see the previous character's inventory/quests. We fix this by
+     resetting BEFORE the insert so the snapshot is genuinely empty.
+     ─────────────────────────────────────────────────────────────────── */
+  if (typeof window.createNewCharacter === 'function') {
+    const _origCreate = window.createNewCharacter;
+    window.createNewCharacter = async function() {
+      // Reset the DOM first so buildSaveData() inside the original captures
+      // a clean state. The resetStateToDefaults wrapper above also blocks
+      // cloud saves during the wipe.
+      try {
+        if (typeof resetStateToDefaults === 'function') resetStateToDefaults();
+      } catch(e) { console.warn('pre-create reset failed:', e); }
+      // Wait one tick so any debounced cloud-save calls flushed by the reset
+      // settle before the new insert happens.
+      await new Promise(r => setTimeout(r, 50));
+      return _origCreate.apply(this, arguments);
+    };
+  }
+
+  /* ── Guard scheduleCloudSave during load ──────────────────────────────── */
+  const _origSchedule = window.scheduleCloudSave;
+  window.scheduleCloudSave = function() {
+    if (window._loadingCharacter) return;
+    return _origSchedule.apply(this, arguments);
+  };
+
+  /* ── Universal cloud auto-save listener ───────────────────────────────────
+     Anytime an editable element inside the app changes, schedule a cloud
+     save. The existing scheduleCloudSave already debounces by 2 seconds, so
+     rapid typing collapses into a single save. Only fires when a character
+     is loaded (currentCharId is set), so the auth screen / char-select
+     doesn't trigger requests.
+     ─────────────────────────────────────────────────────────────────── */
+  function maybeCloudSave(evt) {
+    if (window._loadingCharacter) return;
+    if (typeof currentCharId === 'undefined' || !currentCharId) return;
+    // Limit to edits inside the main content + overlays we actually save.
+    // Skip auth & char-select overlays so login typing doesn't trigger saves.
+    const t = evt.target;
+    if (!t || !t.closest) return;
+    if (t.closest('#auth-overlay') || t.closest('#char-select-overlay')) return;
+    // Ignore changes on elements that aren't user-editable
+    const tag = (t.tagName || '').toUpperCase();
+    if (tag !== 'INPUT' && tag !== 'SELECT' && tag !== 'TEXTAREA') return;
+    if (t.disabled || t.readOnly) return;
+    if (typeof scheduleCloudSave === 'function') scheduleCloudSave();
+  }
+  // 'input' covers typing in text/number/textarea instantly;
+  // 'change' covers selects, checkboxes, and radio buttons reliably.
+  document.addEventListener('input',  maybeCloudSave, true);
+  document.addEventListener('change', maybeCloudSave, true);
+
+  // Also fire on clicks for vital +/- buttons, death-save pips, sec-pips, etc.
+  // These mutate state via inline onclicks but don't change any input value,
+  // so the input/change listeners above miss them. We piggy-back on clicks.
+  document.addEventListener('click', function(evt) {
+    if (window._loadingCharacter) return;
+    if (typeof currentCharId === 'undefined' || !currentCharId) return;
+    const t = evt.target;
+    if (!t || !t.closest) return;
+    if (t.closest('#auth-overlay') || t.closest('#char-select-overlay')) return;
+    if (t.closest('.rail-footer')) return;          // file save/load buttons, theme picker
+    // Only state-mutating click targets:
+    const interactive = t.closest(
+      '.vital-adj-btn, .ds-pip, .sec-pip, .skill-lvl-btn, .ab-btn, ' +
+      '.btn, .buff-remove, .rank-cb, .quest-actions button, ' +
+      '[onclick]'
+    );
+    if (!interactive) return;
+    // Skip nav / tab buttons themselves — switching tabs shouldn't auto-save
+    if (interactive.classList.contains('nav-item') || interactive.classList.contains('tab')) return;
+    if (typeof scheduleCloudSave === 'function') scheduleCloudSave();
+  }, true);
+
+})();
 </script>
 
 <!-- ═══════════════════════════════ REST MODAL ══════════════════════════════ -->
@@ -6962,6 +8351,151 @@ function scheduleCloudSave() {
          border-top:1px solid var(--teal);font-size:13px;color:var(--teal);line-height:1.6;"></div>
   </div>
 </div>
+
+
+
+<!-- ═══════════════════ HUD SYNC (additive, non-invasive) ═══════════════════ -->
+<script>
+(function() {
+  // Mirror panel state into the sticky HUD without touching any existing logic.
+  function syncHud() {
+    try {
+      // Name
+      const nameEl = document.getElementById('banner-name');
+      const hudName = document.getElementById('hud-name');
+      if (nameEl && hudName) {
+        // Don't clobber the user's in-progress edit
+        if (!hudName.classList.contains('hud-name-editing')) {
+          const nameInput = document.getElementById('banner-name-input');
+          let nm = (nameInput && nameInput.style.display !== 'none') ? nameInput.value : nameEl.textContent;
+          nm = (nm || 'New Character').trim();
+          if (hudName.textContent !== nm) hudName.textContent = nm;
+        }
+      }
+      // Subtitle (Class · Race · Background)
+      const subEl  = document.getElementById('banner-sub');
+      const hudSub = document.getElementById('hud-sub');
+      if (subEl && hudSub && hudSub.textContent !== subEl.textContent) {
+        hudSub.textContent = subEl.textContent;
+      }
+      // Level / HP / XP
+      const pairs = [['disp-level','hud-level'],['disp-hp','hud-hp'],['disp-xp','hud-xp']];
+      pairs.forEach(([src,dst]) => {
+        const s = document.getElementById(src), d = document.getElementById(dst);
+        if (s && d && d.textContent !== s.textContent) d.textContent = s.textContent;
+      });
+      // Portrait mirror
+      const portraitImg = document.getElementById('portrait-img');
+      const hudImg = document.getElementById('hud-portrait-img');
+      const hudPh  = document.getElementById('hud-portrait-placeholder');
+      if (portraitImg && hudImg) {
+        const has = portraitImg.src && portraitImg.style.display !== 'none' && portraitImg.src !== window.location.href;
+        if (has) {
+          if (hudImg.src !== portraitImg.src) hudImg.src = portraitImg.src;
+          hudImg.style.display = '';
+          if (hudPh) hudPh.style.display = 'none';
+        } else {
+          hudImg.style.display = 'none';
+          if (hudPh) hudPh.style.display = '';
+        }
+      }
+    } catch(e) { /* never let HUD sync break the app */ }
+  }
+  // Initial + periodic sync. Cheap enough at 400ms.
+  document.addEventListener('DOMContentLoaded', syncHud);
+  setInterval(syncHud, 400);
+
+  // Clicking the HUD name makes it editable inline. On blur/Enter, save the
+  // edit back to the hidden banner-name input and visible span, then trigger
+  // a cloud save so the new name persists.
+  function makeHudNameEditable(hudName) {
+    if (hudName._editableInstalled) return;
+    hudName._editableInstalled = true;
+    hudName.style.cursor = 'text';
+    hudName.title = 'Click to edit name';
+
+    let editing = false;
+
+    function commitEdit() {
+      if (!editing) return;
+      editing = false;
+      hudName.removeAttribute('contenteditable');
+      hudName.classList.remove('hud-name-editing');
+      // Sanitize: strip any rich content, collapse whitespace, fallback to default
+      const raw = (hudName.textContent || '').replace(/\s+/g, ' ').trim();
+      const name = raw || 'New Character';
+      hudName.textContent = name;
+      // Propagate to the hidden banner input + visible span the rest of the app reads from
+      const bannerInput   = document.getElementById('banner-name-input');
+      const bannerDisplay = document.getElementById('banner-name');
+      if (bannerInput)   bannerInput.value = name;
+      if (bannerDisplay) bannerDisplay.textContent = name;
+      // Trigger any listeners on the banner input (recalc, etc.)
+      if (bannerInput) {
+        bannerInput.dispatchEvent(new Event('input',  { bubbles: true }));
+        bannerInput.dispatchEvent(new Event('change', { bubbles: true }));
+      }
+      // Auto cloud save
+      if (typeof scheduleCloudSave === 'function') scheduleCloudSave();
+    }
+
+    hudName.addEventListener('click', function() {
+      if (editing) return;
+      editing = true;
+      hudName.setAttribute('contenteditable', 'plaintext-only');
+      hudName.classList.add('hud-name-editing');
+      hudName.focus();
+      // Select all text in the editable element
+      const r = document.createRange();
+      r.selectNodeContents(hudName);
+      const sel = window.getSelection();
+      sel.removeAllRanges();
+      sel.addRange(r);
+    });
+    hudName.addEventListener('blur',  commitEdit);
+    hudName.addEventListener('keydown', function(e) {
+      if (e.key === 'Enter')  { e.preventDefault(); hudName.blur(); }
+      if (e.key === 'Escape') {
+        // Cancel — revert to whatever the banner-name span says
+        const bannerDisplay = document.getElementById('banner-name');
+        if (bannerDisplay) hudName.textContent = bannerDisplay.textContent;
+        hudName.blur();
+      }
+    });
+  }
+
+  document.addEventListener('DOMContentLoaded', function() {
+    const hudName = document.getElementById('hud-name');
+    if (hudName) makeHudNameEditable(hudName);
+
+    // Clicking the HUD portrait jumps to Overview and opens the portrait picker
+    const hudPortrait = document.getElementById('hud-portrait');
+    if (hudPortrait) {
+      hudPortrait.style.cursor = 'pointer';
+      hudPortrait.title = 'Click to change portrait';
+      hudPortrait.addEventListener('click', function() {
+        const overviewBtn = document.querySelector('.nav-item.tab[onclick*="\'main\'"]');
+        if (overviewBtn && !overviewBtn.classList.contains('active')) overviewBtn.click();
+        const inp = document.getElementById('portrait-input');
+        if (inp) setTimeout(() => inp.click(), 60);
+      });
+    }
+  });
+})();
+</script>
+
+<style>
+/* Visual cue while editing the HUD name inline */
+.hud-name-editing {
+  outline: none;
+  background: rgba(16,217,160,.10);
+  border-radius: 4px;
+  padding: 0 6px;
+  margin: 0 -6px;
+  box-shadow: 0 0 0 2px var(--accent);
+  caret-color: var(--accent);
+}
+</style>
 
 </body>
 </html>
