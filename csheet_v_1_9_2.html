@@ -4290,30 +4290,6 @@ input:focus, select:focus, textarea:focus { border-color: var(--accent) !importa
     <div class="vital-box"><div class="v-label">Cur. Weight</div><div class="v-value" id="disp-curwt">0</div></div>
   </div>
 
-  <!-- TALESPIRE SYNC — hidden unless running inside TaleSpire as a Symbiote -->
-  <div class="card" id="ts-sync-card" style="display:none;">
-    <div class="card-header">
-      <div class="dot" style="background:var(--teal)"></div>TaleSpire Sync
-      <span id="ts-sync-status" style="margin-left:auto;font-family:var(--font-mono);font-size:10px;color:var(--text3);">Connecting…</span>
-    </div>
-    <div class="card-body">
-      <div style="display:flex;flex-wrap:wrap;gap:8px;align-items:center;">
-        <button class="btn" onclick="tsLinkSelected()" style="padding:6px 12px;font-size:12px;">⛓ Link Selected Mini</button>
-        <button class="btn" onclick="tsPullHP()" style="padding:6px 12px;font-size:12px;">↓ Pull HP from Mini</button>
-        <label style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--text2);cursor:pointer;white-space:nowrap;">
-          <input type="checkbox" id="ts-autosync" onchange="tsToggleAutoSync(this.checked)" style="width:auto;margin:0;"> Auto-sync HP
-        </label>
-        <button class="btn" onclick="tsAnnounceHP()" style="padding:6px 12px;font-size:12px;">↑ Announce HP in chat</button>
-      </div>
-      <div id="ts-sync-linked" style="margin-top:8px;font-size:12px;color:var(--text3);">
-        No mini linked. Select your mini in TaleSpire, then click <strong>Link Selected Mini</strong>.
-      </div>
-      <div style="margin-top:6px;font-size:11px;color:var(--text3);font-style:italic;line-height:1.45;">
-        TaleSpire's Symbiote API can <em>read</em> a mini's HP but cannot write it. “Announce HP” posts your current HP to chat so the GM can update the mini — it does not change the HP bar directly.
-      </div>
-    </div>
-  </div>
-
   <div class="grid-2">
 
     <!-- LEFT COL -->
@@ -7545,6 +7521,12 @@ function adjustVital(which, delta) {
   } else if (which === 'pp') {
     state.vitalPP = Math.max(0, (state.vitalPP || 0) + delta);
     document.getElementById('disp-pp').textContent = state.vitalPP;
+  }
+  // Mirror HP / temp HP / resource changes to the live_vitals sync channel so
+  // the TaleSpire Symbiote (and any other open instance) updates in real time.
+  if ((which === 'hp' || which === 'temphp' || which === 'stamina') &&
+      typeof schedulePublishVitals === 'function') {
+    schedulePublishVitals();
   }
 }
 
@@ -22336,6 +22318,7 @@ async function createNewCharacter() {
   document.getElementById('char-list-btn').style.display = '';
   resetStateToDefaults();
   showSaveBanner('✓ New character created');
+  if (typeof startVitalsSync === 'function') startVitalsSync();
 }
 
 async function loadCloudCharacter(id) {
@@ -22356,6 +22339,7 @@ async function loadCloudCharacter(id) {
     localStorage.removeItem('lov_character_autosave_portrait');
     applyLoadData(data.data);
     showSaveBanner('✓ Character loaded from cloud');
+    if (typeof startVitalsSync === 'function') startVitalsSync();
   } catch(e) {
     alert('Error restoring character data: ' + e.message);
   }
@@ -27008,154 +26992,104 @@ window.clearMerchantFilters = clearMerchantFilters;
 
 </script>
 
-<!-- ═══════ TALESPIRE HP SYNC ═══════ -->
+<!-- ═══════ LIVE VITALS SYNC ═══════ -->
 <script>
 /* ============================================================================
-   TALESPIRE HP SYNC  (Symbiote API v0.1)
+   LIVE VITALS SYNC  (browser sheet side)
    --------------------------------------------------------------------------
-   READ  (TaleSpire mini -> sheet): fully supported.
-     • Link the selected mini, pull its current HP into the sheet.
-     • Optional live auto-sync via the creatureHpChanged event.
-   WRITE (sheet -> TaleSpire mini): NOT possible through the Symbiote API —
-     TaleSpire blocks Symbiotes from editing board state. "Announce HP" posts
-     the current HP to chat so a GM can update the mini manually.
-   The card stays hidden unless the TaleSpire API is detected, so the sheet
-   behaves exactly as before in a normal browser.
+   Mirrors ONLY HP / temp HP / resource through a dedicated `live_vitals` row
+   so the TaleSpire Symbiote (and any other open instance) stays in step in
+   real time — without ever round-tripping the whole character blob.
+   • live_vitals is the source of truth for *current* hp / resource.
+   • The sheet still owns max values + label (it has the calc engine) and
+     publishes them so the lightweight Symbiote can display "27 / 40".
    ========================================================================== */
 (function(){
 'use strict';
 
-function tsApi(){
-  if (typeof TS !== 'undefined' && TS && TS.creatures) return TS;
-  if (typeof com !== 'undefined' && com.bouncyrock && com.bouncyrock.talespire) return com.bouncyrock.talespire;
-  return null;
+const VITALS_TOKEN = 'sheet-' + Math.random().toString(36).slice(2);  // per-instance id
+let _ch = null, _timer = null, _applyingRemote = false;
+
+function _resourceLabel(){
+  const el = document.getElementById('label-resource');
+  return (el && el.textContent) ? el.textContent.trim() : 'Resource';
+}
+function _row(){
+  return {
+    character_id : currentCharId,
+    hp           : state.vitalHP || 0,
+    hp_max       : (typeof getMaxHP === 'function') ? getMaxHP() : null,
+    temp_hp      : state.vitalTempHP || 0,
+    resource     : state.vitalStamina || 0,
+    resource_max : (typeof getMaxResource === 'function') ? getMaxResource() : null,
+    resource_label : _resourceLabel(),
+    updated_by   : VITALS_TOKEN,
+    updated_at   : new Date().toISOString()
+  };
 }
 
-let _tsReady   = false;
-let _autoSync  = false;
-window.__tsLinkedId   = window.__tsLinkedId   || null;
-window.__tsLinkedName = window.__tsLinkedName || '';
-
-function _esc(s){ return String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
-function _err(e){ return _esc(e && e.error ? e.error : (e && e.message ? e.message : e)); }
-function tsStatus(msg,color){ const el=document.getElementById('ts-sync-status'); if(el){ el.textContent=msg; if(color) el.style.color=color; } }
-function tsLinked(html){ const el=document.getElementById('ts-sync-linked'); if(el) el.innerHTML=html; }
-
-function tsInit(){
-  const api = tsApi();
-  if (!api) return;                         // not inside TaleSpire → leave hidden
-  const card = document.getElementById('ts-sync-card');
-  if (card) card.style.display = '';
-  if (_tsReady) return;
-  _tsReady = true;
-  tsStatus('Connected','var(--accent)');
-  if (window.__tsLinkedId && window.__tsLinkedName){
-    tsLinked('Linked to <strong>'+_esc(window.__tsLinkedName)+'</strong>.');
-  }
+async function publishVitals(){
+  if (window._partyReadOnly) return;
+  if (!supabaseClient || !currentUser || !currentCharId) return;
+  if (_applyingRemote) return;                       // never echo a value we just received
+  try { await supabaseClient.from('live_vitals').upsert(_row(), { onConflict:'character_id' }); }
+  catch(e){ console.warn('[vitals] publish failed', e); }
 }
+function schedulePublishVitals(){ clearTimeout(_timer); _timer = setTimeout(publishVitals, 1200); }
 
-/* ── global event handlers (referenced by name in the manifest) ──────────── */
-window.tsOnState = function(ev){
-  if (ev && ev.kind === 'hasInitialized') tsInit();
-};
-window.tsOnCreatureState = function(ev){
-  if (!ev || ev.kind !== 'creatureHpChanged' || !_autoSync || !window.__tsLinkedId) return;
-  const p = ev.payload || {};
-  if (p.id === window.__tsLinkedId && p.hp) _applyHpFromMini(p.hp.value, p.hp.max, true);
-};
-
-/* ── core ────────────────────────────────────────────────────────────────── */
-function _applyHpFromMini(value, max, silent){
-  if (typeof value !== 'number') return;
-  const sheetMax = (typeof getMaxHP === 'function') ? getMaxHP() : value;
-  const clamped  = Math.max(0, Math.min(sheetMax, Math.round(value)));
-  state.vitalHP = clamped;
-  if (typeof refreshMaxHPDisplay === 'function') refreshMaxHPDisplay();
+function _applyRemoteVitals(row){
+  if (!row) return;
+  _applyingRemote = true;
+  try {
+    if (typeof row.hp === 'number'){
+      const max = (typeof getMaxHP === 'function') ? getMaxHP() : row.hp;
+      state.vitalHP = Math.max(0, Math.min(max, row.hp));
+    }
+    if (typeof row.temp_hp === 'number') state.vitalTempHP = Math.max(0, row.temp_hp);
+    if (typeof row.resource === 'number'){
+      const rmax = (typeof getMaxResource === 'function') ? getMaxResource() : row.resource;
+      state.vitalStamina = Math.max(0, Math.min(rmax, row.resource));
+    }
+    if (typeof refreshMaxHPDisplay  === 'function') refreshMaxHPDisplay();
+    if (typeof refreshResourceDisplay === 'function') refreshResourceDisplay();
+    const t = document.getElementById('disp-temphp'); if (t) t.textContent = state.vitalTempHP || 0;
+  } finally { _applyingRemote = false; }
+  // Persist into the character blob too, so a full reload keeps the value.
   if (typeof scheduleCloudSave === 'function') scheduleCloudSave();
-  if (!silent){
-    let note = 'Pulled HP '+Math.round(value)+(max!=null?('/'+Math.round(max)):'')+' → sheet ('+clamped+'/'+sheetMax+')';
-    if (Math.round(value) > sheetMax) note += ' — mini HP exceeded sheet max, clamped.';
-    tsLinked(note);
-  }
 }
 
-async function tsLinkSelected(){
-  const api = tsApi();
-  if (!api){ tsStatus('Not in TaleSpire','var(--red)'); return; }
+async function startVitalsSync(){
+  if (!supabaseClient || !currentCharId) return;
+  // 1) Reconcile — live_vitals wins for current hp/resource (Symbiote may have
+  //    changed them while this sheet was closed).
   try {
-    const sel = await api.creatures.getSelectedCreatures();
-    if (!sel || !sel.length){
-      tsLinked('No mini selected. Click your mini in TaleSpire first, then Link.');
-      return;
-    }
-    const id = sel[0].id;
-    let name = '(unnamed mini)';
-    try { const info = await api.creatures.getMoreInfo([id]); if (info && info[0] && info[0].name) name = info[0].name; } catch(e){}
-    window.__tsLinkedId = id;
-    window.__tsLinkedName = name;
-    tsLinked('Linked to <strong>'+_esc(name)+'</strong>. Pull HP or enable Auto-sync.');
-    tsStatus('Linked','var(--accent)');
-  } catch(e){ tsLinked('Could not read selection: '+_err(e)); }
-}
+    const { data, error } = await supabaseClient
+      .from('live_vitals').select('*').eq('character_id', currentCharId).maybeSingle();
+    if (!error && data) _applyRemoteVitals(data);
+  } catch(e){ /* table may not exist yet — non-fatal */ }
 
-async function tsPullHP(){
-  const api = tsApi();
-  if (!api){ tsStatus('Not in TaleSpire','var(--red)'); return; }
-  if (!window.__tsLinkedId) await tsLinkSelected();
-  if (!window.__tsLinkedId) return;
+  // 2) Publish current vitals (fills in max + label; seeds the row if absent).
+  publishVitals();
+
+  // 3) Subscribe to live changes coming from other instances (the Symbiote).
   try {
-    const info = await api.creatures.getMoreInfo([window.__tsLinkedId]);
-    if (!info || !info[0] || !info[0].hp){
-      tsLinked('Linked mini returned no HP (you may not have permission to read it).');
-      return;
-    }
-    _applyHpFromMini(info[0].hp.value, info[0].hp.max, false);
-  } catch(e){ tsLinked('Pull failed: '+_err(e)); }
+    if (_ch) { supabaseClient.removeChannel(_ch); _ch = null; }
+    _ch = supabaseClient
+      .channel('vitals-' + currentCharId)
+      .on('postgres_changes',
+          { event:'*', schema:'public', table:'live_vitals', filter:'character_id=eq.' + currentCharId },
+          (payload) => {
+            const row = payload.new || {};
+            if (!row || row.updated_by === VITALS_TOKEN) return;  // ignore our own writes
+            _applyRemoteVitals(row);
+          })
+      .subscribe();
+  } catch(e){ console.warn('[vitals] subscribe failed', e); }
 }
 
-function tsToggleAutoSync(on){
-  _autoSync = !!on;
-  if (on && !window.__tsLinkedId) tsLinked('Auto-sync on, but no mini linked yet — click Link Selected Mini.');
-  else if (on)                    tsLinked('Auto-sync ON — sheet HP follows <strong>'+_esc(window.__tsLinkedName||'mini')+'</strong>.');
-  else                            tsStatus('Connected','var(--accent)');
-}
-
-async function tsAnnounceHP(){
-  const api = tsApi();
-  if (!api){ tsStatus('Not in TaleSpire','var(--red)'); return; }
-  const cur = state.vitalHP || 0;
-  const max = (typeof getMaxHP === 'function') ? getMaxHP() : cur;
-  const who = document.getElementById('banner-name-input')?.value?.trim()
-           || document.getElementById('banner-name')?.textContent?.trim()
-           || 'Character';
-  const msg = who + ' — HP: ' + cur + '/' + max;
-  try {
-    if (window.__tsLinkedId){
-      try { await api.chat.sendAsCreature(msg, window.__tsLinkedId, 'board'); tsLinked('Announced “'+_esc(msg)+'” to the board.'); return; }
-      catch(e){ /* fall back to a plain chat message */ }
-    }
-    await api.chat.send(msg, 'board');
-    tsLinked('Announced “'+_esc(msg)+'” to the board.');
-  } catch(e){ tsLinked('Announce failed: '+_err(e)); }
-}
-
-/* ── expose + boot ───────────────────────────────────────────────────────── */
-window.tsLinkSelected  = tsLinkSelected;
-window.tsPullHP        = tsPullHP;
-window.tsToggleAutoSync= tsToggleAutoSync;
-window.tsAnnounceHP    = tsAnnounceHP;
-window.__tsInit        = tsInit;
-
-function _tsBoot(){ if (tsApi()) tsInit(); }
-if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', _tsBoot);
-else _tsBoot();
-// API injection can complete shortly after DOM load; poll briefly as a fallback.
-let _tries = 0;
-const _poll = setInterval(function(){
-  if (tsApi()){ tsInit(); clearInterval(_poll); }
-  if (++_tries > 40) clearInterval(_poll);   // ~20s ceiling
-}, 500);
-
+window.schedulePublishVitals = schedulePublishVitals;
+window.publishVitals         = publishVitals;
+window.startVitalsSync       = startVitalsSync;
 })();
 
 </script>
