@@ -1,0 +1,684 @@
+<!DOCTYPE html>
+<!-- LoV — Game Master's Ledger v1.0 (companion to csheet_v_1_9_4.html) -->
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
+<meta http-equiv="Expires" content="0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Legends of the Vanguard — Game Master's Ledger</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=Crimson+Text:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
+<style>
+/* Tokens lifted verbatim from the sheet's Grimoire Codex theme so the Ledger
+   reads as the same artifact, not a second product. */
+:root{
+  --bg:#100d0a; --bg2:#17120e; --bg3:#1f1811; --bg4:#2a1f15;
+  --border:#3d2e1e; --border2:#5c4530;
+  --accent:#c8922a; --accent2:#e8b86d; --gold:#c8922a; --gold2:#e8b86d;
+  --red:#c0392b; --green:#5a8a3c; --teal:#3a7a6e; --purple:#8b5cf6;
+  --text:#e8dcc8; --text2:#a89070; --text3:#6b5040;
+  --font-head:'Cinzel',serif; --font-body:'Crimson Text',serif;
+  --tray-h:118px;
+}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0;background:var(--bg);color:var(--text);font-family:var(--font-body);font-size:15px}
+body{padding-bottom:calc(var(--tray-h) + 24px)}
+:focus-visible{outline:2px solid var(--accent2);outline-offset:2px}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+
+.wrap{max-width:1180px;margin:0 auto;padding:24px 18px}
+
+/* ── Masthead ─────────────────────────────────────────────────────────── */
+.mast{display:flex;align-items:flex-end;justify-content:space-between;gap:16px;flex-wrap:wrap;
+  padding-bottom:16px;border-bottom:1px solid var(--border);margin-bottom:22px}
+.mast-eyebrow{font-family:var(--font-head);font-size:10px;letter-spacing:.24em;text-transform:uppercase;
+  color:var(--accent);opacity:.8;margin-bottom:7px}
+.mast-title{font-family:var(--font-head);font-size:27px;font-weight:700;color:var(--text);line-height:1.1}
+.mast-right{display:flex;align-items:center;gap:9px;flex-wrap:wrap}
+
+select,input,textarea{background:var(--bg3);border:1px solid var(--border2);border-radius:6px;
+  color:var(--text);font-family:var(--font-body);font-size:14px;padding:7px 10px}
+select:focus,input:focus,textarea:focus{border-color:var(--accent)}
+label.fl{display:block;font-family:var(--font-head);font-size:9.5px;letter-spacing:.15em;
+  text-transform:uppercase;color:var(--text2);margin-bottom:5px}
+
+.btn{font-family:var(--font-head);font-size:11.5px;letter-spacing:.1em;text-transform:uppercase;
+  background:var(--bg3);border:1px solid var(--border2);border-radius:6px;color:var(--text2);
+  padding:8px 15px;cursor:pointer;transition:all .16s ease}
+.btn:hover{border-color:var(--accent);color:var(--accent2)}
+.btn.gold{border-color:var(--accent);color:var(--accent)}
+.btn.gold:hover{background:rgba(200,146,42,.14);color:var(--accent2)}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:#1a1208;font-weight:700}
+.btn.primary:hover{background:var(--accent2);border-color:var(--accent2)}
+.btn:disabled{opacity:.34;cursor:not-allowed}
+.btn.tiny{padding:4px 10px;font-size:10px}
+
+/* ── Section headers ──────────────────────────────────────────────────── */
+.sec-head{display:flex;align-items:center;gap:10px;margin:0 0 14px}
+.sec-dot{width:7px;height:7px;border-radius:50%;background:var(--accent);flex:none}
+.sec-title{font-family:var(--font-head);font-size:13px;letter-spacing:.16em;text-transform:uppercase;color:var(--text)}
+.sec-count{font-family:var(--font-head);font-size:11px;color:var(--text3);letter-spacing:.1em}
+.sec-actions{margin-left:auto;display:flex;gap:8px}
+
+/* ── Roster ───────────────────────────────────────────────────────────── */
+.roster{display:grid;grid-template-columns:repeat(auto-fill,minmax(310px,1fr));gap:14px}
+.pc{position:relative;background:linear-gradient(150deg,var(--bg2),var(--bg));
+  border:1px solid var(--border);border-radius:11px;padding:15px 16px 14px;cursor:pointer;
+  transition:border-color .16s ease,transform .16s ease,box-shadow .16s ease}
+.pc:hover{border-color:var(--border2);transform:translateY(-2px);box-shadow:0 8px 22px rgba(0,0,0,.4)}
+.pc.sel{border-color:var(--accent);box-shadow:0 0 0 1px rgba(200,146,42,.35),0 8px 22px rgba(0,0,0,.4)}
+.pc-top{display:flex;align-items:flex-start;gap:10px;margin-bottom:12px}
+.pc-check{width:17px;height:17px;flex:none;margin-top:2px;border:1px solid var(--border2);border-radius:4px;
+  display:flex;align-items:center;justify-content:center;font-size:11px;color:var(--bg);background:var(--bg3)}
+.pc.sel .pc-check{background:var(--accent);border-color:var(--accent)}
+.pc-name{font-family:var(--font-head);font-size:16.5px;font-weight:700;color:var(--text);line-height:1.2}
+.pc-sub{font-size:12.5px;color:var(--text2);margin-top:2px}
+.pc-lvl{margin-left:auto;text-align:right;flex:none}
+.pc-lvl-n{font-family:var(--font-head);font-size:22px;font-weight:700;color:var(--accent);line-height:1}
+.pc-lvl-l{font-family:var(--font-head);font-size:8.5px;letter-spacing:.16em;text-transform:uppercase;color:var(--text3)}
+
+.bar-row{margin-bottom:8px}
+.bar-top{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:3px}
+.bar-label{font-family:var(--font-head);font-size:9px;letter-spacing:.15em;text-transform:uppercase;color:var(--text2)}
+.bar-val{font-family:var(--font-head);font-size:12px;color:var(--text)}
+.bar-bg{height:7px;background:var(--bg4);border-radius:4px;overflow:hidden;border:1px solid var(--border)}
+.bar-fill{height:100%;border-radius:3px;transition:width .3s ease}
+.bar-fill.hp{background:linear-gradient(90deg,#8c2f22,var(--red))}
+.bar-fill.hp.hurt{background:linear-gradient(90deg,#8a6a1e,#d4a017)}
+.bar-fill.hp.crit{background:linear-gradient(90deg,#6b1a12,#a02418)}
+.bar-fill.res{background:linear-gradient(90deg,#2a5a52,var(--teal))}
+.bar-fill.xp{background:linear-gradient(90deg,#8a6420,var(--accent))}
+.stale{font-size:10.5px;color:var(--text3);font-style:italic}
+
+.stats{display:grid;grid-template-columns:repeat(7,1fr);gap:3px;margin:11px 0 10px}
+.stat{text-align:center;background:var(--bg3);border:1px solid var(--border);border-radius:5px;padding:4px 1px}
+.stat-l{font-family:var(--font-head);font-size:7.5px;letter-spacing:.06em;color:var(--text3)}
+.stat-v{font-family:var(--font-head);font-size:13px;font-weight:700;color:var(--text)}
+
+.purse{display:flex;gap:6px;flex-wrap:wrap;padding-top:10px;border-top:1px solid var(--border)}
+.coin{flex:1;min-width:52px;text-align:center;background:var(--bg3);border:1px solid var(--border);
+  border-radius:5px;padding:4px 2px}
+.coin-l{font-family:var(--font-head);font-size:7.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--text3)}
+.coin-v{font-family:var(--font-head);font-size:13px;font-weight:700;color:var(--text)}
+.coin.pp .coin-v{color:#cfd8e3}.coin.gp .coin-v{color:var(--accent2)}
+.coin.sp .coin-v{color:#b8b8b8}.coin.cp .coin-v{color:#b87333}
+
+.pend{position:absolute;top:12px;right:12px;background:var(--accent);color:#1a1208;
+  font-family:var(--font-head);font-size:9.5px;font-weight:700;letter-spacing:.05em;
+  padding:3px 8px;border-radius:999px}
+
+/* ── Grant tray (the signature: awards accumulate against a live selection) ── */
+.tray{position:fixed;left:0;right:0;bottom:0;z-index:80;background:linear-gradient(180deg,var(--bg2),var(--bg));
+  border-top:1px solid var(--accent);box-shadow:0 -8px 30px rgba(0,0,0,.55)}
+.tray-in{max-width:1180px;margin:0 auto;padding:12px 18px;display:flex;gap:14px;align-items:flex-end;flex-wrap:wrap}
+.tray-target{min-width:150px}
+.tray-target-n{font-family:var(--font-head);font-size:16px;font-weight:700;color:var(--accent)}
+.tray-target-l{font-size:12px;color:var(--text2);margin-top:1px}
+.kinds{display:flex;gap:0;border:1px solid var(--border2);border-radius:7px;overflow:hidden}
+.kind{font-family:var(--font-head);font-size:10.5px;letter-spacing:.12em;text-transform:uppercase;
+  background:var(--bg3);border:none;color:var(--text2);padding:8px 15px;cursor:pointer}
+.kind+.kind{border-left:1px solid var(--border2)}
+.kind.on{background:var(--accent);color:#1a1208;font-weight:700}
+.fields{display:flex;gap:9px;align-items:flex-end;flex-wrap:wrap;flex:1}
+.f-xp input{width:120px}
+.f-coin input{width:74px}
+.f-item .i-name{width:170px}.f-item .i-qty{width:58px}.f-item .i-wt{width:66px}
+.f-note input{width:100%;min-width:170px}
+.note-wrap{flex:1;min-width:170px}
+.msg{font-size:12.5px;padding:5px 0 0;width:100%}
+.msg.ok{color:var(--green)}.msg.err{color:var(--red)}
+
+/* ── Ledger ───────────────────────────────────────────────────────────── */
+.ledger{margin-top:30px}
+.entry{display:flex;align-items:center;gap:12px;padding:9px 12px;border:1px solid var(--border);
+  border-radius:8px;background:var(--bg2);margin-bottom:7px}
+.entry-icon{width:26px;height:26px;flex:none;border-radius:6px;background:var(--bg4);border:1px solid var(--border2);
+  display:flex;align-items:center;justify-content:center;font-size:12px;color:var(--accent)}
+.entry-main{flex:1;min-width:0}
+.entry-sum{font-family:var(--font-head);font-size:13px;color:var(--text)}
+.entry-meta{font-size:12px;color:var(--text3);margin-top:1px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.chip{font-family:var(--font-head);font-size:8.5px;letter-spacing:.13em;text-transform:uppercase;
+  padding:3px 9px;border-radius:999px;flex:none}
+.chip.pending{background:rgba(200,146,42,.14);color:var(--accent);border:1px solid rgba(200,146,42,.4)}
+.chip.applied{background:rgba(90,138,60,.14);color:var(--green);border:1px solid rgba(90,138,60,.4)}
+
+.empty{color:var(--text3);font-size:14px;padding:22px;text-align:center;border:1px dashed var(--border2);border-radius:10px}
+
+/* ── Auth gate ────────────────────────────────────────────────────────── */
+.gate{position:fixed;inset:0;z-index:200;background:var(--bg);display:flex;align-items:center;justify-content:center;padding:22px}
+.gate-card{width:100%;max-width:390px;background:linear-gradient(150deg,var(--bg2),var(--bg));
+  border:1px solid var(--border2);border-radius:13px;padding:30px 28px}
+.gate-card input{width:100%;margin-bottom:11px}
+
+@media(max-width:640px){
+  .mast-title{font-size:21px}
+  .roster{grid-template-columns:1fr}
+  .tray-in{gap:10px}
+  .fields{width:100%}
+}
+</style>
+</head>
+<body>
+
+<!-- ══════════ AUTH GATE ══════════ -->
+<div class="gate" id="gate">
+  <div class="gate-card">
+    <div class="mast-eyebrow">&#10022; Legends of the Vanguard &#10022;</div>
+    <div class="mast-title" style="margin-bottom:6px;">Game Master's Ledger</div>
+    <p style="color:var(--text2);font-size:13.5px;line-height:1.5;margin:0 0 20px;">
+      Sign in with the same account you use for your character sheet.</p>
+    <input type="email" id="gate-email" placeholder="Email" autocomplete="email">
+    <input type="password" id="gate-pass" placeholder="Password" autocomplete="current-password">
+    <button class="btn primary" id="gate-btn" style="width:100%;padding:11px;" onclick="gmSignIn()">Sign in</button>
+    <div class="msg" id="gate-msg"></div>
+  </div>
+</div>
+
+<!-- ══════════ CONSOLE ══════════ -->
+<div class="wrap" id="console" style="display:none;">
+
+  <div class="mast">
+    <div>
+      <div class="mast-eyebrow">&#10022; Legends of the Vanguard &#10022;</div>
+      <div class="mast-title">Game Master's Ledger</div>
+    </div>
+    <div class="mast-right">
+      <select id="camp-sel" onchange="onCampaignChange()" style="min-width:190px;"></select>
+      <button class="btn" onclick="refreshAll()" title="Reload roster and ledger">&#10227; Refresh</button>
+      <button class="btn" onclick="gmSignOut()">Sign out</button>
+    </div>
+  </div>
+
+  <div id="no-camp" class="empty" style="display:none;">
+    You don't own a campaign yet. Create one from the Party tab of your character sheet, then share the join code with your players.
+  </div>
+
+  <div id="main" style="display:none;">
+    <div class="sec-head">
+      <div class="sec-dot"></div>
+      <div class="sec-title">Roster</div>
+      <div class="sec-count" id="roster-count"></div>
+      <div class="sec-actions">
+        <button class="btn tiny" onclick="selectAll(true)">Select all</button>
+        <button class="btn tiny" onclick="selectAll(false)">Clear</button>
+      </div>
+    </div>
+    <div class="roster" id="roster"></div>
+    <div class="empty" id="roster-empty" style="display:none;">
+      No characters have joined this campaign yet. Share the join code from your sheet's Party tab.
+    </div>
+
+    <div class="ledger">
+      <div class="sec-head">
+        <div class="sec-dot" style="background:var(--text3)"></div>
+        <div class="sec-title">Ledger</div>
+        <div class="sec-count">last 30 entries</div>
+      </div>
+      <div id="ledger-list"></div>
+      <div class="empty" id="ledger-empty" style="display:none;">Nothing awarded yet.</div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════ GRANT TRAY ══════════ -->
+<div class="tray" id="tray" style="display:none;">
+  <div class="tray-in">
+    <div class="tray-target">
+      <div class="tray-target-n" id="tray-n">No one selected</div>
+      <div class="tray-target-l" id="tray-l">Tap a character to select</div>
+    </div>
+
+    <div class="kinds">
+      <button class="kind on" data-kind="xp"       onclick="setKind('xp')">XP</button>
+      <button class="kind"    data-kind="currency" onclick="setKind('currency')">Coin</button>
+      <button class="kind"    data-kind="item"     onclick="setKind('item')">Item</button>
+    </div>
+
+    <div class="fields">
+      <div class="f-xp" id="f-xp">
+        <label class="fl" for="a-xp">Experience</label>
+        <input type="number" id="a-xp" placeholder="e.g. 500" step="1">
+      </div>
+
+      <div class="f-coin" id="f-coin" style="display:none;">
+        <label class="fl">Coin (negative to deduct)</label>
+        <div style="display:flex;gap:6px;">
+          <input type="number" id="a-cp" placeholder="cp"><input type="number" id="a-sp" placeholder="sp">
+          <input type="number" id="a-gp" placeholder="gp"><input type="number" id="a-pp" placeholder="pp">
+        </div>
+      </div>
+
+      <div class="f-item" id="f-item" style="display:none;">
+        <label class="fl">Item</label>
+        <div style="display:flex;gap:6px;flex-wrap:wrap;">
+          <input type="text" class="i-name" id="a-item-name" placeholder="Item name">
+          <input type="number" class="i-qty" id="a-item-qty" placeholder="Qty" value="1" min="1">
+          <input type="number" class="i-wt" id="a-item-wt" placeholder="Wt" step="0.1">
+          <select id="a-item-list">
+            <option value="inv-body">Inventory</option>
+            <option value="pot-body">Potions</option>
+            <option value="misc-body">Miscellaneous</option>
+            <option value="profitems-body">Profession Items</option>
+          </select>
+          <input type="text" id="a-item-desc" placeholder="Description (optional)" style="width:190px;">
+        </div>
+      </div>
+
+      <div class="note-wrap f-note">
+        <label class="fl" for="a-note">Reason (shown to the player)</label>
+        <input type="text" id="a-note" placeholder="Defeated the Hollow King">
+      </div>
+
+      <button class="btn primary" id="award-btn" style="padding:10px 22px;" onclick="sendAward()">Award</button>
+    </div>
+
+    <div class="msg" id="tray-msg"></div>
+  </div>
+</div>
+
+<script>
+'use strict';
+/* ════════════════════════════════════════════════════════════════════════════
+   GAME MASTER'S LEDGER
+   Companion console for the Legends of the Vanguard character sheet.
+
+   Reads: campaigns (owned), characters (in those campaigns), live_vitals.
+   Writes: gm_awards ONLY. This page never touches characters.data — the
+   player's sheet drains the award queue and applies each entry through its own
+   calc engine. See gm_awards_migration.sql for the table and RLS policies.
+   ════════════════════════════════════════════════════════════════════════════ */
+
+const SUPABASE_URL  = 'https://keqqhulovivmpdooiitl.supabase.co';
+const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtlcXFodWxvdml2bXBkb29paXRsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzgxMTAxODksImV4cCI6MjA5MzY4NjE4OX0.Pys9KV2SeOYrCjNOjgvl9RHBDRPI_NSy8G4XHkTlWpY';
+
+// Mirrors XP_TABLE in the sheet. Keep in step if the curve ever changes.
+const XP_TABLE = [0,300,900,2100,3900,6500,11000,17500,25000,34000,45000,60000,80000,102000,128000,158000,192000,230000,275000,330000];
+function getLevel(xp){
+  for (let i = XP_TABLE.length - 1; i >= 0; i--) if (xp >= XP_TABLE[i]) return i + 1;
+  return 1;
+}
+
+const ATTRS = ['BRW','AGI','PHY','INT','WILL','CHAR','LUCK'];
+const LIST_NAMES = { 'inv-body':'Inventory', 'pot-body':'Potions',
+                     'misc-body':'Miscellaneous', 'profitems-body':'Profession Items' };
+
+let sb = null, me = null;
+let campaigns = [], campaignId = null;
+let chars = [], vitals = {}, awards = [];
+let selected = new Set();
+let kind = 'xp';
+let rtChannel = null;
+
+const $ = id => document.getElementById(id);
+const esc = s => String(s == null ? '' : s).replace(/[<>&]/g, c => ({'<':'&lt;','>':'&gt;','&':'&amp;'}[c]));
+const num = v => { const n = parseInt(v, 10); return Number.isFinite(n) ? n : 0; };
+
+function msg(el, text, type){
+  const m = $(el);
+  m.textContent = text || '';
+  m.className = 'msg' + (type ? ' ' + type : '');
+}
+
+/* ── Auth ─────────────────────────────────────────────────────────────── */
+(async function boot(){
+  let tries = 0;
+  while (!window.supabase && tries < 25) { await new Promise(r => setTimeout(r, 100)); tries++; }
+  if (!window.supabase) { msg('gate-msg', 'Could not reach Supabase. Check your connection and reload.', 'err'); return; }
+  sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
+  const { data:{ session } } = await sb.auth.getSession();
+  if (session) { me = session.user; enterConsole(); }
+})();
+
+async function gmSignIn(){
+  const email = $('gate-email').value.trim();
+  const pass  = $('gate-pass').value;
+  if (!email || !pass) { msg('gate-msg', 'Enter your email and password.', 'err'); return; }
+  const btn = $('gate-btn');
+  btn.disabled = true; btn.textContent = 'Signing in\u2026';
+  const { data, error } = await sb.auth.signInWithPassword({ email, password: pass });
+  btn.disabled = false; btn.textContent = 'Sign in';
+  if (error) { msg('gate-msg', error.message, 'err'); return; }
+  me = data.user;
+  enterConsole();
+}
+
+async function gmSignOut(){
+  if (rtChannel) { try { sb.removeChannel(rtChannel); } catch(e){} rtChannel = null; }
+  await sb.auth.signOut();
+  location.reload();
+}
+
+async function enterConsole(){
+  $('gate').style.display = 'none';
+  $('console').style.display = '';
+  await loadCampaigns();
+}
+
+/* ── Campaigns ────────────────────────────────────────────────────────── */
+async function loadCampaigns(){
+  const { data, error } = await sb.from('campaigns')
+    .select('id, name, join_code, owner_id')
+    .eq('owner_id', me.id)
+    .order('created_at', { ascending: true });
+  if (error) { $('no-camp').style.display = ''; $('no-camp').textContent = 'Could not load campaigns: ' + error.message; return; }
+  campaigns = data || [];
+  if (!campaigns.length) { $('no-camp').style.display = ''; $('main').style.display = 'none'; $('tray').style.display = 'none'; return; }
+
+  const sel = $('camp-sel');
+  sel.innerHTML = campaigns.map(c =>
+    `<option value="${c.id}">${esc(c.name)} \u2014 ${esc(c.join_code || '')}</option>`).join('');
+  campaignId = campaigns[0].id;
+  sel.value = campaignId;
+  $('no-camp').style.display = 'none';
+  $('main').style.display = '';
+  $('tray').style.display = '';
+  await refreshAll();
+  subscribeRealtime();
+}
+
+function onCampaignChange(){
+  campaignId = $('camp-sel').value;
+  selected.clear();
+  refreshAll();
+  subscribeRealtime();
+}
+
+/* ── Data ─────────────────────────────────────────────────────────────── */
+async function refreshAll(){
+  await Promise.all([loadChars(), loadAwards()]);
+  renderRoster();
+  renderLedger();
+  renderTray();
+}
+
+async function loadChars(){
+  const { data, error } = await sb.from('characters')
+    .select('id, name, class, level, user_id, data, updated_at')
+    .eq('campaign_id', campaignId)
+    .order('name', { ascending: true });
+  if (error) { console.warn('roster load failed', error); chars = []; return; }
+  chars = data || [];
+
+  vitals = {};
+  const ids = chars.map(c => c.id);
+  if (ids.length){
+    const { data: v } = await sb.from('live_vitals').select('*').in('character_id', ids);
+    (v || []).forEach(row => { vitals[row.character_id] = row; });
+  }
+}
+
+async function loadAwards(){
+  const { data, error } = await sb.from('gm_awards')
+    .select('id, character_id, kind, payload, note, created_at, applied_at')
+    .eq('campaign_id', campaignId)
+    .order('created_at', { ascending: false })
+    .limit(30);
+  awards = error ? [] : (data || []);
+}
+
+/* ── Roster rendering ─────────────────────────────────────────────────── */
+function charXP(c){
+  const f = (c.data && c.data.fields) || {};
+  return num(f['inp-xp']);
+}
+function charCurrency(c){
+  const s = (c.data && c.data.state) || {};
+  return s.currency || { copper:0, silver:0, gold:0, plat:0 };
+}
+function pendingFor(id){
+  return awards.filter(a => a.character_id === id && !a.applied_at).length;
+}
+
+function renderRoster(){
+  const host = $('roster');
+  host.innerHTML = '';
+  $('roster-count').textContent = chars.length ? chars.length + (chars.length === 1 ? ' character' : ' characters') : '';
+  $('roster-empty').style.display = chars.length ? 'none' : '';
+
+  chars.forEach(c => {
+    const f    = (c.data && c.data.fields)  || {};
+    const s    = (c.data && c.data.state)   || {};
+    const v    = vitals[c.id] || null;
+    const xp   = charXP(c);
+    const lvl  = getLevel(xp);
+    const cur  = charCurrency(c);
+    const spec = f['sel-spec'] || '';
+    const cls  = c.class || f['sel-class'] || '\u2014';
+    const race = f['sel-race'] || '';
+
+    // live_vitals is authoritative for current values; the blob is the fallback
+    // for a character whose sheet has never been opened since the sync landed.
+    const hp     = v ? v.hp : (typeof s.vitalHP === 'number' ? s.vitalHP : 0);
+    const hpMax  = v && v.hp_max ? v.hp_max : null;
+    const tempHP = v ? (v.temp_hp || 0) : (s.vitalTempHP || 0);
+    const res    = v ? v.resource : (typeof s.vitalStamina === 'number' ? s.vitalStamina : 0);
+    const resMax = v && v.resource_max ? v.resource_max : null;
+    const resLbl = (v && v.resource_label) || 'Resource';
+
+    const hpPct  = hpMax ? Math.max(0, Math.min(100, (hp / hpMax) * 100)) : 0;
+    const hpCls  = hpPct <= 25 ? 'crit' : (hpPct <= 60 ? 'hurt' : '');
+    const resPct = resMax ? Math.max(0, Math.min(100, (res / resMax) * 100)) : 0;
+
+    const prevXP = XP_TABLE[lvl - 1] || 0;
+    const nextXP = XP_TABLE[Math.min(lvl, XP_TABLE.length - 1)];
+    const xpPct  = (lvl >= XP_TABLE.length) ? 100
+                 : Math.max(0, Math.min(100, ((xp - prevXP) / (nextXP - prevXP)) * 100));
+
+    const base = s.baseStats || {};
+    const pend = pendingFor(c.id);
+
+    const el = document.createElement('div');
+    el.className = 'pc' + (selected.has(c.id) ? ' sel' : '');
+    el.tabIndex = 0;
+    el.setAttribute('role', 'button');
+    el.setAttribute('aria-pressed', selected.has(c.id) ? 'true' : 'false');
+    el.innerHTML = `
+      ${pend ? `<div class="pend">${pend} pending</div>` : ''}
+      <div class="pc-top">
+        <div class="pc-check">${selected.has(c.id) ? '\u2713' : ''}</div>
+        <div style="min-width:0;">
+          <div class="pc-name">${esc(c.name || 'Unnamed')}</div>
+          <div class="pc-sub">${esc(cls)}${spec ? ' \u00b7 ' + esc(spec) : ''}${race ? ' \u00b7 ' + esc(race) : ''}</div>
+        </div>
+        <div class="pc-lvl"><div class="pc-lvl-n">${lvl}</div><div class="pc-lvl-l">Level</div></div>
+      </div>
+
+      <div class="bar-row">
+        <div class="bar-top">
+          <span class="bar-label">Health</span>
+          <span class="bar-val">${hpMax ? `${hp} / ${hpMax}` : `${hp}`}${tempHP ? ` <span style="color:var(--teal)">+${tempHP}</span>` : ''}</span>
+        </div>
+        <div class="bar-bg"><div class="bar-fill hp ${hpCls}" style="width:${hpPct}%"></div></div>
+      </div>
+
+      <div class="bar-row">
+        <div class="bar-top">
+          <span class="bar-label">${esc(resLbl)}</span>
+          <span class="bar-val">${resMax ? `${res} / ${resMax}` : `${res}`}</span>
+        </div>
+        <div class="bar-bg"><div class="bar-fill res" style="width:${resPct}%"></div></div>
+      </div>
+
+      <div class="bar-row">
+        <div class="bar-top">
+          <span class="bar-label">Experience</span>
+          <span class="bar-val">${xp.toLocaleString()}${lvl < XP_TABLE.length ? ` <span style="color:var(--text3)">/ ${nextXP.toLocaleString()}</span>` : ''}</span>
+        </div>
+        <div class="bar-bg"><div class="bar-fill xp" style="width:${xpPct}%"></div></div>
+      </div>
+
+      <div class="stats">
+        ${ATTRS.map(a => `<div class="stat"><div class="stat-l">${a}</div><div class="stat-v">${num(base[a])}</div></div>`).join('')}
+      </div>
+
+      <div class="purse">
+        <div class="coin pp"><div class="coin-l">Plat</div><div class="coin-v">${num(cur.plat)}</div></div>
+        <div class="coin gp"><div class="coin-l">Gold</div><div class="coin-v">${num(cur.gold)}</div></div>
+        <div class="coin sp"><div class="coin-l">Silver</div><div class="coin-v">${num(cur.silver)}</div></div>
+        <div class="coin cp"><div class="coin-l">Copper</div><div class="coin-v">${num(cur.copper)}</div></div>
+      </div>
+      ${v ? '' : '<div class="stale" style="margin-top:8px;">No live vitals yet \u2014 values from last save</div>'}`;
+
+    const toggle = () => { selected.has(c.id) ? selected.delete(c.id) : selected.add(c.id); renderRoster(); renderTray(); };
+    el.addEventListener('click', toggle);
+    el.addEventListener('keydown', e => {
+      if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggle(); }
+    });
+    host.appendChild(el);
+  });
+}
+
+function selectAll(on){
+  selected.clear();
+  if (on) chars.forEach(c => selected.add(c.id));
+  renderRoster(); renderTray();
+}
+
+/* ── Ledger ───────────────────────────────────────────────────────────── */
+function awardSummary(a){
+  const p = a.payload || {};
+  if (a.kind === 'xp') { const n = num(p.amount); return (n > 0 ? '+' : '') + n.toLocaleString() + ' XP'; }
+  if (a.kind === 'currency'){
+    const map = { copper:'cp', silver:'sp', gold:'gp', plat:'pp' };
+    const parts = Object.keys(map).filter(k => num(p[k])).map(k => (num(p[k]) > 0 ? '+' : '') + num(p[k]) + map[k]);
+    return parts.length ? parts.join(' ') : 'No coin';
+  }
+  if (a.kind === 'item'){
+    const q = num(p.qty) || 1;
+    return esc(p.name || 'Item') + (q > 1 ? ' \u00d7' + q : '');
+  }
+  return a.kind;
+}
+
+function renderLedger(){
+  const host = $('ledger-list');
+  host.innerHTML = '';
+  $('ledger-empty').style.display = awards.length ? 'none' : '';
+  const nameOf = id => { const c = chars.find(x => x.id === id); return c ? (c.name || 'Unnamed') : 'Unknown'; };
+  const icons = { xp:'\u2726', currency:'\u25c9', item:'\u2756' };
+
+  awards.forEach(a => {
+    const when = new Date(a.created_at).toLocaleString([], { month:'short', day:'numeric', hour:'numeric', minute:'2-digit' });
+    const row = document.createElement('div');
+    row.className = 'entry';
+    row.innerHTML = `
+      <div class="entry-icon">${icons[a.kind] || '\u2022'}</div>
+      <div class="entry-main">
+        <div class="entry-sum">${awardSummary(a)} <span style="color:var(--text2);font-weight:400;">to ${esc(nameOf(a.character_id))}</span></div>
+        <div class="entry-meta">${when}${a.note ? ' \u00b7 ' + esc(a.note) : ''}</div>
+      </div>
+      <div class="chip ${a.applied_at ? 'applied' : 'pending'}">${a.applied_at ? 'Applied' : 'Pending'}</div>`;
+    if (!a.applied_at){
+      const btn = document.createElement('button');
+      btn.className = 'btn tiny';
+      btn.textContent = 'Revoke';
+      btn.onclick = () => revokeAward(a.id);
+      row.appendChild(btn);
+    }
+    host.appendChild(row);
+  });
+}
+
+async function revokeAward(id){
+  const { error } = await sb.from('gm_awards').delete().eq('id', id).is('applied_at', null);
+  if (error) { alert('Could not revoke: ' + error.message); return; }
+  await refreshAll();
+}
+
+/* ── Grant tray ───────────────────────────────────────────────────────── */
+function setKind(k){
+  kind = k;
+  document.querySelectorAll('.kind').forEach(b => b.classList.toggle('on', b.dataset.kind === k));
+  $('f-xp').style.display   = k === 'xp'       ? '' : 'none';
+  $('f-coin').style.display = k === 'currency' ? '' : 'none';
+  $('f-item').style.display = k === 'item'     ? '' : 'none';
+  msg('tray-msg', '');
+}
+
+function renderTray(){
+  const n = selected.size;
+  $('tray-n').textContent = n ? (n === 1 ? '1 character' : n + ' characters') : 'No one selected';
+  const names = chars.filter(c => selected.has(c.id)).map(c => c.name || 'Unnamed');
+  $('tray-l').textContent = n ? names.join(', ') : 'Tap a character to select';
+  $('award-btn').disabled = !n;
+}
+
+function buildPayload(){
+  if (kind === 'xp'){
+    const amt = num($('a-xp').value);
+    if (!amt) return { error:'Enter an XP amount.' };
+    return { payload:{ amount: amt } };
+  }
+  if (kind === 'currency'){
+    const p = { copper:num($('a-cp').value), silver:num($('a-sp').value),
+                gold:num($('a-gp').value),  plat:num($('a-pp').value) };
+    if (!p.copper && !p.silver && !p.gold && !p.plat) return { error:'Enter at least one coin amount.' };
+    return { payload:p };
+  }
+  const name = $('a-item-name').value.trim();
+  if (!name) return { error:'Enter an item name.' };
+  return { payload:{
+    name,
+    qty:  num($('a-item-qty').value) || 1,
+    wt:   parseFloat($('a-item-wt').value) || 0,
+    desc: $('a-item-desc').value.trim(),
+    list: $('a-item-list').value
+  }};
+}
+
+async function sendAward(){
+  if (!selected.size) return;
+  const built = buildPayload();
+  if (built.error) { msg('tray-msg', built.error, 'err'); return; }
+
+  const note = $('a-note').value.trim();
+  const rows = [...selected].map(id => ({
+    campaign_id: campaignId, character_id: id, awarded_by: me.id,
+    kind, payload: built.payload, note: note || null
+  }));
+
+  const btn = $('award-btn');
+  btn.disabled = true; btn.textContent = 'Awarding\u2026';
+  const { error } = await sb.from('gm_awards').insert(rows);
+  btn.disabled = false; btn.textContent = 'Award';
+
+  if (error) { msg('tray-msg', 'Could not award: ' + error.message, 'err'); return; }
+
+  const who = selected.size === 1 ? '1 character' : selected.size + ' characters';
+  msg('tray-msg', 'Awarded to ' + who + '. It lands the moment their sheet is open.', 'ok');
+  ['a-xp','a-cp','a-sp','a-gp','a-pp','a-item-name','a-item-wt','a-item-desc','a-note']
+    .forEach(id => { const el = $(id); if (el) el.value = ''; });
+  $('a-item-qty').value = '1';
+  await refreshAll();
+  setTimeout(() => msg('tray-msg', ''), 5000);
+}
+
+/* ── Realtime ─────────────────────────────────────────────────────────── */
+// live_vitals has no campaign column, so we subscribe broadly and filter by the
+// roster client-side; RLS already limits what actually reaches us.
+function subscribeRealtime(){
+  if (rtChannel) { try { sb.removeChannel(rtChannel); } catch(e){} rtChannel = null; }
+  let pending = null;
+  const nudge = () => { clearTimeout(pending); pending = setTimeout(() => { refreshAll(); }, 500); };
+  try {
+    rtChannel = sb.channel('gm-' + campaignId)
+      .on('postgres_changes', { event:'*', schema:'public', table:'live_vitals' }, payload => {
+        const id = (payload.new && payload.new.character_id) || (payload.old && payload.old.character_id);
+        if (id && chars.some(c => c.id === id)) nudge();
+      })
+      .on('postgres_changes', { event:'*', schema:'public', table:'gm_awards',
+                                filter:'campaign_id=eq.' + campaignId }, nudge)
+      .subscribe();
+  } catch(e){ console.warn('realtime subscribe failed', e); }
+}
+
+document.addEventListener('keydown', e => {
+  if (e.key === 'Enter' && (e.metaKey || e.ctrlKey) && selected.size) sendAward();
+});
+</script>
+</body>
+</html>
