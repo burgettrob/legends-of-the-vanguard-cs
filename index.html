@@ -1,28 +1,28 @@
 <!DOCTYPE html>
 <!--
   ════════════════════════════════════════════════════════════════════
-  REDIRECT STUB — points visitors to the current version of the sheet.
+  SELF-UPDATING REDIRECT STUB
 
-  ▶ TO PUBLISH A NEW VERSION:
-      1. Upload your new content file (e.g. index_50.html) to the repo.
-      2. Change the version number in the THREE places marked
-         "CHANGE THIS" below (from index_49.html to index_50.html).
-      3. Upload this index.html.
+  ▶ You should NOT need to edit this file again.
 
-  Because each content file has a brand-new filename, browsers and the
-  GitHub Pages CDN can never serve a stale copy of it. Only this tiny
-  stub is cached, and it refreshes within GitHub's ~10-minute window.
+  To publish a new version:
+    1. Upload the new content file (e.g. csheet_v_2_0_2.html).
+    2. Change the "sheet" value in version.json to that filename.
+  That's it — no edits here.
+
+  WHY THIS FIXES STALE CACHES:
+  Browsers cache index.html using GitHub's HTTP headers (~10 min TTL),
+  and the old <meta http-equiv="Cache-Control"> tags did nothing about
+  that. This stub carries NO version info of its own — it fetches
+  version.json fresh on every load (unique query string + no-store), so
+  even a long-stale cached copy of this file still finds the newest
+  sheet. The FALLBACK below only matters if version.json can't be
+  fetched at all (offline, typo, etc.).
   ════════════════════════════════════════════════════════════════════
 -->
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <!-- Keep the stub itself from being cached aggressively -->
-  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
-  <meta http-equiv="Pragma" content="no-cache">
-  <meta http-equiv="Expires" content="0">
-  <!-- CHANGE THIS (1 of 3): meta-refresh fallback for when JS is disabled -->
-  <meta http-equiv="refresh" content="0; url=csheet_v_2_0.html">
   <title>Legends of the Vanguard — Character Codex</title>
   <style>
     html, body { margin: 0; height: 100%; background: #141414; color: #e8e6e1;
@@ -35,24 +35,48 @@
     a { color: #c8a04e; }
     .muted { color: #8a8780; font-size: 13px; }
   </style>
-  <script>
-    // CHANGE THIS (2 of 3): instant JS redirect.
-    // Using location.replace so the stub doesn't pollute browser history /
-    // back-button behaviour. The ?_ cache-buster guarantees a fresh fetch
-    // of the content file even on the most stubborn cache.
-    (function () {
-      var TARGET = "csheet_v_2_0.html";
-      window.location.replace(TARGET + "?_=" + Date.now());
-    })();
-  </script>
 </head>
 <body>
   <div class="wrap">
     <div class="spinner"></div>
     <div>Loading the latest version…</div>
-    <!-- CHANGE THIS (3 of 3): manual fallback link -->
-    <div class="muted">If you are not redirected automatically,
-      <a href="csheet_v_2_0.html">click here to open the character sheet</a>.</div>
+    <div class="muted" id="fallback-note" style="display:none;">
+      Taking longer than expected —
+      <a id="fallback-link" href="#">click here to open the character sheet</a>.
+    </div>
   </div>
+  <script>
+    (function () {
+      // Safety net used ONLY if version.json can't be loaded. Normal releases
+      // never touch this — they just edit version.json.
+      var FALLBACK = "csheet_v_2_0_1.html";
+
+      function go(target) {
+        // Cache-buster on the content file too (belt-and-suspenders; content
+        // files are already uniquely named so this is just insurance).
+        window.location.replace(target + "?_=" + Date.now());
+      }
+
+      // If we haven't redirected within a few seconds, surface a manual link
+      // so no one is ever stuck on the spinner.
+      var timer = setTimeout(function () {
+        var note = document.getElementById('fallback-note');
+        var link = document.getElementById('fallback-link');
+        if (link) link.href = FALLBACK + "?_=" + Date.now();
+        if (note) note.style.display = 'block';
+      }, 4000);
+
+      fetch("version.json?_=" + Date.now(), { cache: "no-store" })
+        .then(function (r) { return r.ok ? r.json() : null; })
+        .then(function (data) {
+          clearTimeout(timer);
+          go((data && data.sheet) ? data.sheet : FALLBACK);
+        })
+        .catch(function () {
+          clearTimeout(timer);
+          go(FALLBACK);
+        });
+    })();
+  </script>
 </body>
 </html>
